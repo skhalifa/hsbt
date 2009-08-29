@@ -40,6 +40,7 @@
 #include "packet.h"
 #include "bnep.h"
 #include "sdp.h"
+#include "amp-a2mp.h"
 
 #define BUFFSIZE 1024
 
@@ -255,13 +256,14 @@ L2CAP::L2CAP()
     trace_me_l2cap_cmd_ = 0;
 }
 
-void L2CAP::setup(bd_addr_t ad, LMP * l, class BNEP * b, class SDP * s,
+void L2CAP::setup(bd_addr_t ad, LMP * l, class BNEP * b, class SDP * s,class A2MP * a2mp,
 		  BTNode * node)
 {
     bd_addr_ = ad;
     lmp_ = l;
     bnep_ = b;
     sdp_ = s;
+    a2mp_ = a2mp;
 }
 
 int L2CAP::command(int argc, const char *const *argv)
@@ -577,7 +579,9 @@ void L2CAP::sendUp(Packet * p, Handler * h)
 	    bnep_->recv(p, 0);
 	} else if (sdp_ && lh->cid->_psm == PSM_SDP) {
 	    sdp_->recv(p, lh->cid);
-	} else {
+	} else if (a2mp_ && lh->cid->_psm == PSM_A2MP) {
+	    a2mp_->recv(p, lh->cid);
+	}else {
 	    fprintf(stderr, "L2CAP::sendUp(): Wrong PSM: %d.\n",
 		    lh->cid->_psm);
 	    abort();
@@ -683,6 +687,9 @@ void L2CAP::_channel_setup_complete(L2CAPChannel * ch)
     } else if (sdp_ && ch->psm() == PSM_SDP) {
 	sdp_->channel_setup_complete(ch);
 	return;
+    } else if (a2mp_ && ch->psm() == PSM_A2MP) {
+    	a2mp_->channel_setup_complete(ch);
+    	return;
     }
     // handle other PSM handle code here
     // ...

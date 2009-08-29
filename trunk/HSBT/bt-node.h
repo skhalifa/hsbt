@@ -44,6 +44,7 @@
 #include "sco-agent.h"
 #include "bnep.h"
 #include "sdp.h"
+#include "amp-a2mp.h"
 #include "wnode.h"
 #include "bt-stat.h"
 
@@ -71,7 +72,7 @@ class BTNode:public WNode {
     BTNode *lookupNode(bd_addr_t n) { return (BTNode *) WNode::lookupNode(n); }
 
     void setup(uint32_t addr, BTChannel *ch, Baseband * bb, LMP * lmp,
-		       L2CAP * l2cap, BNEP *, SDP *);
+		       L2CAP * l2cap, BNEP *, SDP *,A2MP *);
     void sco_connect(BTNode *, ScoAgent *, ScoAgent *);
     void addScoAgent(ScoAgent * a);
     int masterLink(bd_addr_t rmt);
@@ -105,6 +106,7 @@ class BTNode:public WNode {
     BNEP *bnep_;
     ScoAgent *scoAgent_;
     SDP *sdp_;
+    A2MP * a2mp_;
     class ScatFormator * scatFormator_;
 
     int randomizeSlotOffset_;

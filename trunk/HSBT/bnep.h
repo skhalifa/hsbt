@@ -369,6 +369,7 @@ class BNEP:public Mac {
     LMP *lmp_;
     L2CAP *l2cap_;
     class SDP *sdp_;
+    class A2MP *a2mp_;
     // Mac802_15_1 *mac_;
     bd_addr_t bd_addr_;
     bd_addr_t _master_bd_addr;
@@ -410,7 +411,7 @@ class BNEP:public Mac {
   public:
 
     BNEP();
-    void setup(bd_addr_t ad, LMP * l, L2CAP * l2, SDP *, BTNode * node);
+    void setup(bd_addr_t ad, LMP * l, L2CAP * l2, SDP *,A2MP *, BTNode * node);
 
     void removeSchedEntry(Piconet * pico);
     void disableScan();

@@ -300,6 +300,7 @@ int BTNode::command(int argc, const char *const *argv)
 		    sizeof(BNEP::Connection));
 	    fprintf(stderr, "sizeof(BTChannel) : %d\n", sizeof(BTChannel));
 	    fprintf(stderr, "sizeof(SDP) : %d\n", sizeof(SDP));
+	    fprintf(stderr, "sizeof(A2MP) : %d\n", sizeof(A2MP));
 	    fprintf(stderr, "sizeof(Packet) : %d\n", sizeof(Packet));
 	    fprintf(stderr, "sizeof(Packet::hdrlen_) : %d\n",
 		    Packet::hdrlen_);
@@ -704,28 +705,7 @@ int BTNode::command(int argc, const char *const *argv)
 	}
 
     } else if (argc == 9) {
-
-	if (!strcmp(argv[1], "setup")) {
-	    uint32_t addr = atoi(argv[2]);
-
-	    /* all devices are initiated as slaves. Anyway, the role changes
-	     * dynamically, since the one who does inquiry, paging, 
-	     * becomes master.  The one who does inquiry scan and page scan
-	     * becomes slave.
-	     */
-
-	    BTChannel *ch = (BTChannel *) TclObject::lookup(argv[3]);
-	    Baseband *bb = (Baseband *) TclObject::lookup(argv[4]);
-	    LMP *lmp = (LMP *) TclObject::lookup(argv[5]);
-	    L2CAP *l2cap = (L2CAP *) TclObject::lookup(argv[6]);
-	    BNEP *bnep = (BNEP *) TclObject::lookup(argv[7]);
-	    SDP *sdp = (SDP *) TclObject::lookup(argv[8]);
-
-	    setup(addr, ch, bb, lmp, l2cap, bnep, sdp);
-
-	    return (TCL_OK);
-
-	} else if (!strcmp(argv[1], "bnep-qos-setup")) {
+    	if (!strcmp(argv[1], "bnep-qos-setup")) {
 	    BTNode *dest = (BTNode *) TclObject::lookup(argv[2]);
 	    L2CAPChannel *ch = bnep_->lookupChannel(dest->bb_->bd_addr_);
 	    uint8_t Flags = atoi(argv[3]);
@@ -739,8 +719,30 @@ int BTNode::command(int argc, const char *const *argv)
 					 Peak_Bandwidth, Latency,
 					 Delay_Variation));
 	    return (TCL_OK);
+    	}
+    }else if (argc == 10) {
+		if (!strcmp(argv[1], "setup")) {
+			uint32_t addr = atoi(argv[2]);
+
+			/* all devices are initiated as slaves. Anyway, the role changes
+			 * dynamically, since the one who does inquiry, paging,
+			 * becomes master.  The one who does inquiry scan and page scan
+			 * becomes slave.
+			 */
+
+			BTChannel *ch = (BTChannel *) TclObject::lookup(argv[3]);
+			Baseband *bb = (Baseband *) TclObject::lookup(argv[4]);
+			LMP *lmp = (LMP *) TclObject::lookup(argv[5]);
+			L2CAP *l2cap = (L2CAP *) TclObject::lookup(argv[6]);
+			BNEP *bnep = (BNEP *) TclObject::lookup(argv[7]);
+			SDP *sdp = (SDP *) TclObject::lookup(argv[8]);
+			A2MP *a2mp = (A2MP *) TclObject::lookup(argv[9]);
+
+			setup(addr, ch, bb, lmp, l2cap, bnep, sdp,a2mp);
+
+			return (TCL_OK);
+		}
 	}
-    }
 #if 0
     fprintf(stderr, "%s (%d) :", argv[1], argc - 2);
     for (int i = 0; i < argc - 2; i++) {
@@ -778,7 +780,7 @@ void BTNode::energyReset()
 
 
 void BTNode::setup(uint32_t addr, BTChannel * ch, Baseband * bb, LMP * lmp,
-		   L2CAP * l2cap, BNEP * bnep, SDP * sdp)
+		   L2CAP * l2cap, BNEP * bnep, SDP * sdp,A2MP * a2mp)
 {
     phy_ = ch;
     bb_ = bb;
@@ -786,14 +788,16 @@ void BTNode::setup(uint32_t addr, BTChannel * ch, Baseband * bb, LMP * lmp,
     l2cap_ = l2cap;
     bnep_ = bnep;
     sdp_ = sdp;
+    a2mp_ = a2mp;
 
     setAddr(addr);
 
     phy_->setup(addr, bb, lmp, this);
     lmp_->setup(addr, ch, bb, l2cap, this);
-    l2cap_->setup(addr, lmp, bnep, sdp, this);
-    bnep_->setup(addr, lmp, l2cap, sdp, this);
+    l2cap_->setup(addr, lmp, bnep, sdp,a2mp, this);
+    bnep_->setup(addr, lmp, l2cap, sdp,a2mp, this);
     sdp_->setup(addr, lmp, l2cap, this);
+    a2mp_->setup(addr, lmp, l2cap, this);
 
     stat_ = new BtStat(0, 100, 1, addr, this);
 }

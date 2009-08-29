@@ -3,6 +3,7 @@ L2CAP set debug_ 0
 LMP set debug_ 0
 Mac/BNEP set debug_ 0
 SDP set debug_ 0
+A2MP set debug_ 0
 BTChannel set debug_ 0
 
 Baseband set T_w_inquiry_scan_ 0
@@ -104,13 +105,14 @@ Node/BTNode set Y_ 0
 Node/BTNode set Z_ 0
 
 Node/BTNode instproc init args {
-        $self instvar mac_ bnep_ sdp_ l2cap_ lmp_ bb_ phy_ ll_ \
+        $self instvar mac_ bnep_ sdp_ a2mp_ l2cap_ lmp_ bb_ phy_ ll_ \
 		arptable_ classifier_ dmux_ entry_ ragent_ 
         eval $self next $args
 
 	set bnep_ [new Mac/BNEP]
 	set mac_ $bnep_
 	set sdp_ [new SDP]
+	set a2mp_ [new A2MP]
 	set l2cap_ [new L2CAP]
 	set lmp_ [new LMP]
 	set bb_ [new Baseband]
@@ -161,11 +163,11 @@ Node/BTNode instproc init args {
 
 	$classifier_ defaulttarget $ll_
 
-	$self setup [AddrParams addr2id $args] $phy_ $bb_ $lmp_ $l2cap_ $bnep_ $sdp_
+	$self setup [AddrParams addr2id $args] $phy_ $bb_ $lmp_ $l2cap_ $bnep_ $sdp_ $a2mp_
 }
 
 Node/BTNode instproc rt {rtagent} {
-        $self instvar mac_ bnep_ sdp_ l2cap_ lmp_ bb_ ll_ arptable_ classifier_ dmux_ entry_ ragent_ 
+        $self instvar mac_ bnep_ sdp_ a2mp_ l2cap_ lmp_ bb_ ll_ arptable_ classifier_ dmux_ entry_ ragent_ 
 
 	set addr [$self node-addr]
 
