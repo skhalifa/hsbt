@@ -275,6 +275,7 @@
 
 #define PSM_BNEP 	0x0F
 #define PSM_SDP 	0x01
+#define PSM_A2MP	0x03
 
 #define ETHER_PROT_SCAT_FORM 0x10	// different from inet/arp
 
@@ -287,6 +288,7 @@
 
 // Protocols
 #define prSDP		0x0001
+#define prA2MP		0x0003
 #define prUDP		0x0002
 #define prTCP		0x0004
 #define prIP		0x0009

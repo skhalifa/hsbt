@@ -68,6 +68,7 @@ class L2CAPChannel {
     friend class LMP;
     friend class ConnectionHandle;
     friend class SDP;
+    friend class A2MP;
     friend class BNEP;
     friend class BTNode;
 
@@ -147,6 +148,7 @@ class L2CAP:public BiConnector {
     LMP *lmp_;
     class BNEP *bnep_;
     class SDP *sdp_;
+    class A2MP *a2mp_;
     bd_addr_t bd_addr_;
     ConnectionHandle *_connhand;
 
@@ -192,8 +194,8 @@ class L2CAP:public BiConnector {
 
     L2CAP();
     inline bd_addr_t bd_addr() { return bd_addr_; }
-    void setup(bd_addr_t ad, LMP * l, class BNEP *, class SDP *,
-	       BTNode * node);
+    void setup(bd_addr_t ad, LMP * l, class BNEP *, class SDP *,class A2MP *
+	       ,BTNode * node);
 
     void sendDown(Packet *, Handler *);
     void sendUp(Packet *, Handler *);

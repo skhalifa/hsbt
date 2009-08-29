@@ -217,12 +217,13 @@ BNEP::BNEP()
     trace_me_bnep_ = 0;
 }
 
-void BNEP::setup(bd_addr_t ad, LMP * l, L2CAP * l2, SDP * s, BTNode * node)
+void BNEP::setup(bd_addr_t ad, LMP * l, L2CAP * l2, SDP * s,A2MP * a2mp, BTNode * node)
 {
     bd_addr_ = ad;
     lmp_ = l;
     l2cap_ = l2;
     sdp_ = s;
+    a2mp_=a2mp;
     // l2cap_->bnep_ = this;
     node_ = node;
 }
