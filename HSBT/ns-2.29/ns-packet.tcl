@@ -152,6 +152,7 @@ foreach prot {
 	BT
 	BNEP
 	SDP
+	A2MP
 	XCP 	# XCP, transport protocol
 # Application-Layer Protocols:
 	Message # a protocol to carry text messages
