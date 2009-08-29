@@ -153,7 +153,7 @@ OBJ_CC = \
 	bluetooth/baseband.o bluetooth/bt-node.o \
 	bluetooth/l2cap.o bluetooth/lmp.o \
 	bluetooth/lmp-link.o bluetooth/lmp-piconet.o \
-	bluetooth/bnep.o bluetooth/sdp.o \
+	bluetooth/amp-a2mp.o bluetooth/bnep.o bluetooth/sdp.o \
 	bluetooth/rendpoint.o \
 	bluetooth/bt-lossmod.o \
 	bluetooth/bt-linksched.o \
