@@ -327,7 +327,9 @@ MobileNode::start()
 	random_destination();
 	s.schedule(&pos_handle_, &pos_intr_, position_update_interval_);
 }
-
+void MobileNode::getLoc(double *x, double *y, double *z) {
+		update_position();  *x = X_; *y = Y_; *z = Z_;
+	}
 void 
 MobileNode::log_movement()
 {
