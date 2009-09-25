@@ -30,12 +30,15 @@ DST=bluetooth/ns-2.29
 
 setlink $dir Makefile.in $DST
 setlink $dir/tcl/lib ns-lib.tcl ../../$DST
+setlink $dir/tcl/lib ns-mobilenode.tcl ../../$DST
 setlink $dir/tcl/lib ns-packet.tcl ../../$DST
 setlink $dir/common packet.h ../$DST
 setlink $dir/common mobilenode.cc ../$DST
 setlink $dir/common mobilenode.h ../$DST
 setlink $dir/mac arp.cc ../$DST
 setlink $dir/mac arp.h ../$DST
+setlink $dir/mac channel.cc ../$DST
+setlink $dir/mac mac-802_11.cc ../$DST
 setlink $dir/mac wireless-phy.cc ../$DST
 setlink $dir/mac wireless-phy.h ../$DST
 setlink $dir/aodv aodv.h ../$DST
