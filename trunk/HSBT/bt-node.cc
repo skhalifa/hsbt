@@ -538,6 +538,14 @@ int BTNode::command(int argc, const char *const *argv)
 	    }
 	    lmp_->HCI_Disconnect(ag1->connh, reason);
 	    return (TCL_OK);
+	} else if(strcmp(argv[1], "addif") == 0) {
+		WirelessPhy *n = (WirelessPhy*)
+			TclObject::lookup(argv[2]);
+		if(n == 0)
+			return TCL_ERROR;
+		n->insertnode(&ifhead_);
+		n->setnode(this);
+		return TCL_OK;
 	}
 
     } else if (argc == 4) {
