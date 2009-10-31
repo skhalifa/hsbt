@@ -66,11 +66,11 @@ void A2MPInqCallback::handle(Event *)
 A2MP::A2MP()
 : timer_(this), inqCallback_(this), lastInqT_(-9999),
 inqTShred_(60), inInquiry_(0), conn_(0), numConn_(0), connNumShred_(1),
-nbr_(0), numNbr_(0), identifier_(0), controllerId_(0x01), q_()
+nbr_(0), numNbr_(0), identifier_(0), controllerId_(0x01), q_(),ampNumber_(0)
 {
     //bind("randomizeSlotOffset_", &randomizeSlotOffset_);
     //bind("enable_clkdrfit_in_rp_", &enable_clkdrfit_in_rp_);
-	}
+}
 
 void A2MP::inq_complete()
 {
