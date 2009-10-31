@@ -62,7 +62,7 @@ Packet Format
 #include "baseband.h"
 #include "lmp.h"
 
-
+#define MAX_AMP_NUMBER						3
 //================
 //  Codes
 //================
@@ -221,6 +221,11 @@ class A2MP:public Connector {
     int identifier_;
     uchar controllerId_;
     PacketQueue q_;
+
+    //Alternative mac/phy info
+    int ampNumber_;
+    PAL * pal_[MAX_AMP_NUMBER];
+
 };
 
 #endif				// __ns_amp_a2mp_h__
