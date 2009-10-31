@@ -443,7 +443,7 @@ Simulator instproc node-config args {
         set args [eval $self init-vars $args]
 
         $self instvar addressType_  routingAgent_ propType_  macTrace_ \
-	    routerTrace_ agentTrace_ movementTrace_ channelType_ channel_ numifs_\
+	    routerTrace_ agentTrace_ movementTrace_ channelType_ channel_ \
 	    chan topoInstance_ propInstance_ mobileIP_ \
 	    rxPower_ txPower_ idlePower_ sleepPower_ transitionPower_ \
 	    transitionTime_ satNodeType_ eotTrace_ macType_
@@ -499,11 +499,9 @@ Simulator instproc node-config args {
 		}
  	} elseif {[info exists channel_]} {
 		# Multiple channel, multiple interfaces
-		if {[info exists numifs_]} {
-			set chan(0) $channel_
-		} else {
+		
 			set chan $channel_
-		}
+		
  	}
 	if [info exists topoInstance_] {
 		$propInstance_  topography $topoInstance_
@@ -578,6 +576,7 @@ Simulator instproc node args {
 	    ($macType_ == "Mac/BNEP" || $macType_ == "Mac/Bluetooth") } {
 		# puts "$macType_"
 		set node [eval new Node/BTNode $args]
+		
 		return $node
 	} else {
 		set node [eval new [Simulator set node_factory_] $args]
@@ -603,30 +602,6 @@ Simulator instproc node args {
 Simulator instproc imep-support {} {
 	return [Simulator set IMEPFlag_]
 }
-
-#procedure to change the number of the interfaces of the bluetooth node
-Simulator instproc change-numifs {newnumifs} {
-	$self instvar numifs_
-	set numifs_ $newnumifs
-}
-
-#procedure to get the number of the bluetooth interfaces
-Simulator instproc get-numifs {} {
-	$self instvar numifs_
-	if [ info exists numifs_ ] {
-		return $numifs_
-	} else {
-		return ""
-	}
-}
-#procedure to add interface to the bluetooth node
-Simulator instproc add-channel {indexch ch} {
-	$self instvar chan
-	set chan(indexch) $ch
-}
-
-#procedure to add interface to the bluetooth node using the node-config 
-Simulator instproc ifNum { val } { $self set numifs_ $val }
 
 
 # XXX This should be moved into the node initialization procedure instead 
@@ -709,18 +684,10 @@ Simulator instproc create-wireless-node args {
 	
 
 	# Add main node interface
-	if {[info exists numifs_]} {
-		for {set i 0} {$i < $numifs_} {incr i} {
-			#Add one interface per channel
-			$node add-interface $chan($i) $propInstance_ $llType_ $macType_ \
-		    $ifqType_ $ifqlen_ $phyType_ $antType_ $topoInstance_ \
-				$inerrProc_ $outerrProc_ $FECProc_
-			}
-	} else {	
-		$node add-interface $chan $propInstance_ $llType_ $macType_ \
+	$node add-interface $chan $propInstance_ $llType_ $macType_ \
 	    $ifqType_ $ifqlen_ $phyType_ $antType_ $topoInstance_ \
 			$inerrProc_ $outerrProc_ $FECProc_
-	}
+	
 	# Attach agent
 	if {$routingAgent_ != "DSR"} {
 		$node attach $ragent [Node set rtagent_port_]

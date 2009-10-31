@@ -1198,7 +1198,7 @@ Mac802_11::recv(Packet *p, Handler *h)
 		hdr->error() = 1;
 	}
 
-	hdr->iface() = addr();
+
 
 	if(rx_state_ == MAC_IDLE) {
 		setRxState(MAC_RECV);

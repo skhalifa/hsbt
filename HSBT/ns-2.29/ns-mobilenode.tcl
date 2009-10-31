@@ -65,7 +65,7 @@ Node/MobileNode instproc init args {
 	set X_ 0.0
 	set Y_ 0.0
 	set Z_ 0.0
-	  set arptable_ ""                ;# no ARP table yet
+	set arptable_ ""                ;# no ARP table yet
 	set nifs_	0		;# number of network interfaces
 	# Mobile IP node processing
         $self makemip-New$nodetype_
@@ -174,9 +174,6 @@ Node/MobileNode instproc add-target { agent port } {
 
 	$agent set sport_ $port
 	
-	#get the number of interfaces from the simulator object
-	set numIfsSimulator [$ns get-numifs]
-	
 	# special processing for TORA/IMEP node
 	set toraonly [string first "TORA" [$agent info class]] 
 	if {$toraonly != -1 } {
@@ -203,13 +200,7 @@ Node/MobileNode instproc add-target { agent port } {
 	#}
 	#</zheng: add>
 
-	if { $port == [Node set rtagent_port_] } {
-		#Special processing when multiple interfaces are supported
-		if {$numIfsSimulator != ""} {
-			for {set i 0} {$i < [$self set nifs_]} {incr i} {
-				$agent if-queue $i [$self set ifq_($i)]
-			}
-		}			
+	if { $port == [Node set rtagent_port_] } {			
 		# Ad hoc routing agent setup needs special handling
 		$self add-target-rtagent $agent $port
 		return
@@ -265,9 +256,6 @@ Node/MobileNode instproc add-target-rtagent { agent port } {
 
 	set dmux_ [$self demux]
 	set classifier_ [$self entry]
-	
-	#get number of interfaces
-	set numIfsSimulator [$ns get-numifs]
 
 	# let the routing agent know about the port dmux
 	$agent port-dmux $dmux_
@@ -294,20 +282,10 @@ Node/MobileNode instproc add-target-rtagent { agent port } {
 				$sndT2 target $imep_(0)
 				$agent target $sndT2
 			}
-			$sndT target [$self set ll_(0)]
 		} else {  ;#  no IMEP
-			if {$numIfsSimulator != ""} {
-				for {set i 0} {$i < [$self set nifs_]} {incr i} {
-					set sndT [cmu-trace Send "RTR" $self]
-					$agent target $i $sndT
-					$sndT target [$self set ll_($i)]
-				}
-			} else {
-				$agent target $sndT
-				$sndT target [$self set ll_(0)]
-			}
+			$agent target $sndT
 		}
-		
+		$sndT target [$self set ll_(0)]
 		#
 		# Recv Target
 		#
@@ -352,14 +330,7 @@ Node/MobileNode instproc add-target-rtagent { agent port } {
 			$imep_(0) sendtarget [$self set ll_(0)]
 			
 		} else {  ;#  no IMEP
-			if {$numIfsSimulator != ""} {
-				for {set i 0} {$i < [$self set nifs_]} {incr i} {
-					$agent target $i [$self set ll_($i)]
-				}
-			} else {
-				$agent target [$self set ll_(0)]
-			}
-			
+			$agent target [$self set ll_(0)]
 		}    
 		#
 		# Recv Target
@@ -440,12 +411,8 @@ Node/MobileNode instproc add-interface { channel pmodel lltype mactype qtype qle
 	set fec $fec_($t)
 
 	# Create ARP table per interface
-	# comment the first two uncommented lines and uncomment the commented lines to Initialize ARP table only once.
-	#
-	#if { $arptable_ == "" } {
-	#	set arptable_ [new ARPTable $self $mac]
-	set arptable_($t) [new ARPTable $self $mac]
-	set arptable $arptable_($t)
+	if { $arptable_ == "" } {
+		set arptable_ [new ARPTable $self $mac]
 		# FOR backward compatibility sake, hack only
 		if {$imepflag != ""} {
 			set drpT [$self mobility-trace Drop "IFQ"]
@@ -456,7 +423,7 @@ Node/MobileNode instproc add-interface { channel pmodel lltype mactype qtype qle
 		if { $namfp != "" } {
 			$drpT namattach $namfp
 		}
-    #    }
+        }
 	
 	
 	#

@@ -381,7 +381,6 @@ WirelessChannel::sendUp(Packet* p, Phy *tifp)
 			 
 			 rifp = (rnode->ifhead()).lh_first;
 			 for(; rifp; rifp = rifp->nextnode()){
-				 if(rifp->channel() == this)
 					 s.schedule(rifp, newp, propdelay);
 			 }
 		 }
@@ -400,13 +399,13 @@ WirelessChannel::addNodeToList(MobileNode *mn)
 	if (xListHead_ == NULL) {
 		fprintf(stderr, "INITIALIZE THE LIST xListHead\n");
 		xListHead_ = mn;
-		xListHead_->nextX_[this->index()] = NULL;
-		xListHead_->prevX_[this->index()] = NULL;
+		xListHead_->nextX_ = NULL;
+		xListHead_->prevX_ = NULL;
 	} else {
-		for (tmp = xListHead_; tmp->nextX_[this->index()] != NULL; tmp=tmp->nextX_[this->index()]);
-		tmp->nextX_[this->index()] = mn;
-		mn->prevX_[this->index()] = tmp;
-		mn->nextX_[this->index()] = NULL;
+		for (tmp = xListHead_; tmp->nextX_[this->index()] != NULL; tmp=tmp->nextX_);
+		tmp->nextX_ = mn;
+		mn->prevX_ = tmp;
+		mn->nextX_ = NULL;
 	}
 	numNodes_++;
 }
@@ -416,17 +415,17 @@ WirelessChannel::removeNodeFromList(MobileNode *mn) {
 	
 	MobileNode *tmp;
 	// Find node in list
-	for (tmp = xListHead_; tmp->nextX_[this->index()] != NULL; tmp=tmp->nextX_[this->index()]) {
+	for (tmp = xListHead_; tmp->nextX_ != NULL; tmp=tmp->nextX_) {
 		if (tmp == mn) {
 			if (tmp == xListHead_) {
-				xListHead_ = tmp->nextX_[this->index()];
-				if (tmp->nextX_[this->index()] != NULL)
-					tmp->nextX_[this->index()]->prevX_[this->index()] = NULL;
-			} else if (tmp->nextX_[this->index()] == NULL)
-				tmp->prevX_[this->index()]->nextX_[this->index()] = NULL;
+				xListHead_ = tmp->nextX_;
+				if (tmp->nextX_ != NULL)
+					tmp->nextX_->prevX_ = NULL;
+			} else if (tmp->nextX_ == NULL)
+				tmp->prevX_->nextX_ = NULL;
 			else {
-				tmp->prevX_[this->index()]->nextX_[this->index()] = tmp->nextX_[this->index()];
-				tmp->nextX_[this->index()]->prevX_[this->index()] = tmp->prevX_[this->index()];
+				tmp->prevX_->nextX_ = tmp->nextX_;
+				tmp->nextX_->prevX_ = tmp->prevX_;
 			}
 			numNodes_--;
 			return;
@@ -449,27 +448,27 @@ WirelessChannel::sortLists(void) {
 		flag = false;
 		m = xListHead_;
 		while (m != NULL){
-			if(m->nextX_[this->index()] != NULL)
-				if ( m->X() > m->nextX_[this->index()]->X() ){
+			if(m->nextX_ != NULL)
+				if ( m->X() > m->nextX_->X() ){
 					flag = true;
 					//delete_after m;
-					q = m->nextX_[this->index()];
-					m->nextX_[this->index()] = q->nextX_[this->index()];
-					if (q->nextX_[this->index()] != NULL)
-						q->nextX_[this->index()]->prevX_[this->index()] = m;
+					q = m->nextX_;
+					m->nextX_ = q->nextX_;
+					if (q->nextX_ != NULL)
+						q->nextX_->prevX_ = m;
 			    
 					//insert_before m;
-					q->nextX_[this->index()] = m;
-					q->prevX_[this->index()] = m->prevX_[this->index()];
-					m->prevX_[this->index()] = q;
-					if (q->prevX_[this->index()] != NULL)
-						q->prevX_[this->index()]->nextX_[this->index()] = q;
+					q->nextX_ = m;
+					q->prevX_ = m->prevX_;
+					m->prevX_ = q;
+					if (q->prevX_ != NULL)
+						q->prevX_->nextX_ = q;
 
 					// adjust Head of List
 					if(m == xListHead_) 
-						xListHead_ = m->prevX_[this->index()];
+						xListHead_ = m->prevX_;
 				}
-			m = m -> nextX_[this->index()];
+			m = m -> nextX_;
 		}
 	}
 	
@@ -492,67 +491,67 @@ WirelessChannel::updateNodesList(class MobileNode *mn, double oldX) {
 	
 	/***  DELETE ***/
 	// deleting mn from x-list
-	if(mn->nextX_[this->index()] != NULL) {
-		if(mn->prevX_[this->index()] != NULL){
-			if((mn->nextX_[this->index()]->X() >= X) && (mn->prevX_[this->index()]->X() <= X)) skipX = true; // the node doesn't change its position in the list
+	if(mn->nextX_ != NULL) {
+		if(mn->prevX_ != NULL){
+			if((mn->nextX_->X() >= X) && (mn->prevX_->X() <= X)) skipX = true; // the node doesn't change its position in the list
 			else{
-				mn->nextX_[this->index()]->prevX_[this->index()] = mn->prevX_[this->index()];
-				mn->prevX_[this->index()]->nextX_[this->index()] = mn->nextX_[this->index()];
+				mn->nextX_->prevX_ = mn->prevX_;
+				mn->prevX_->nextX_ = mn->nextX_;
 			}
 		}
 		
 		else{
-			if(mn->nextX_[this->index()]->X() >= X) skipX = true; // skip updating the first element
+			if(mn->nextX_->X() >= X) skipX = true; // skip updating the first element
 			else{
-				mn->nextX_[this->index()]->prevX_[this->index()] = NULL;
-				xListHead_ = mn->nextX_[this->index()];
+				mn->nextX_->prevX_ = NULL;
+				xListHead_ = mn->nextX_;
 			}
 		}
 	}
 	
-	else if(mn->prevX_[this->index()] !=NULL){
-		if(mn->prevX_[this->index()]->X() <= X) skipX = true; // skip updating the last element
-		else mn->prevX_[this->index()]->nextX_[this->index()] = NULL;
+	else if(mn->prevX_ !=NULL){
+		if(mn->prevX_->X() <= X) skipX = true; // skip updating the last element
+		else mn->prevX_->nextX_ = NULL;
 	}
 	
-	if ((mn->prevX_[this->index()] == NULL) && (mn->nextX_[this->index()] == NULL)) skipX = true; //skip updating if only one element in list
+	if ((mn->prevX_ == NULL) && (mn->nextX_ == NULL)) skipX = true; //skip updating if only one element in list
 	
 	/*** INSERT ***/
 	//inserting mn in x-list
 	if(!skipX){
 		if(X > oldX){			
-			for(tmp = mn; tmp->nextX_[this->index()] != NULL && tmp->nextX_[this->index()]->X() < X; tmp = tmp->nextX_[this->index()]);
-			//fprintf(stdout,"Scanning the element addr %d X=%0.f, next addr %d X=%0.f\n", tmp, tmp->X(), tmp->nextX_[this->index()], tmp->nextX_[this->index()]->X());
-			if(tmp->nextX_[this->index()] == NULL) {
-				//fprintf(stdout, "tmp->nextX_[this->index()] is NULL\n");
-				tmp->nextX_[this->index()] = mn;
-				mn->prevX_[this->index()] = tmp;
-				mn->nextX_[this->index()] = NULL;
+			for(tmp = mn; tmp->nextX_ != NULL && tmp->nextX_->X() < X; tmp = tmp->nextX_);
+			//fprintf(stdout,"Scanning the element addr %d X=%0.f, next addr %d X=%0.f\n", tmp, tmp->X(), tmp->nextX_, tmp->nextX_->X());
+			if(tmp->nextX_ == NULL) {
+				//fprintf(stdout, "tmp->nextX_ is NULL\n");
+				tmp->nextX_ = mn;
+				mn->prevX_ = tmp;
+				mn->nextX_ = NULL;
 			} 
 			else{ 
-				//fprintf(stdout, "tmp->nextX_[this->index()] is not NULL, tmp->nextX_[this->index()]->X()=%0.f\n", tmp->nextX_[this->index()]->X());
-				mn->prevX_[this->index()] = tmp->nextX_[this->index()]->prevX_[this->index()];
-				mn->nextX_[this->index()] = tmp->nextX_[this->index()];
-				tmp->nextX_[this->index()]->prevX_[this->index()] = mn;
-				tmp->nextX_[this->index()] = mn;
+				//fprintf(stdout, "tmp->nextX_ is not NULL, tmp->nextX_->X()=%0.f\n", tmp->nextX_->X());
+				mn->prevX_ = tmp->nextX_->prevX_;
+				mn->nextX_ = tmp->nextX_;
+				tmp->nextX_->prevX_ = mn;
+				tmp->nextX_ = mn;
 			} 
 		}
 		else{
-			for(tmp = mn; tmp->prevX_[this->index()] != NULL && tmp->prevX_[this->index()]->X() > X; tmp = tmp->prevX_[this->index()]);
-				//fprintf(stdout,"Scanning the element addr %d X=%0.f, prev addr %d X=%0.f\n", tmp, tmp->X(), tmp->prevX_[this->index()], tmp->prevX_[this->index()]->X());
-			if(tmp->prevX_[this->index()] == NULL) {
-				//fprintf(stdout, "tmp->prevX_[this->index()] is NULL\n");
-				tmp->prevX_[this->index()] = mn;
-				mn->nextX_[this->index()] = tmp;
-				mn->prevX_[this->index()] = NULL;
+			for(tmp = mn; tmp->prevX_ != NULL && tmp->prevX_->X() > X; tmp = tmp->prevX_);
+				//fprintf(stdout,"Scanning the element addr %d X=%0.f, prev addr %d X=%0.f\n", tmp, tmp->X(), tmp->prevX_, tmp->prevX_->X());
+			if(tmp->prevX_ == NULL) {
+				//fprintf(stdout, "tmp->prevX_ is NULL\n");
+				tmp->prevX_ = mn;
+				mn->nextX_ = tmp;
+				mn->prevX_ = NULL;
 				xListHead_ = mn;
 			} 
 			else{
-				//fprintf(stdout, "tmp->prevX_[this->index()] is not NULL, tmp->prevX_[this->index()]->X()=%0.f\n", tmp->prevX_[this->index()]->X());
-				mn->nextX_[this->index()] = tmp->prevX_[this->index()]->nextX_[this->index()];
-				mn->prevX_[this->index()] = tmp->prevX_[this->index()];
-				tmp->prevX_[this->index()]->nextX_[this->index()] = mn;
-				tmp->prevX_[this->index()] = mn;
+				//fprintf(stdout, "tmp->prevX_ is not NULL, tmp->prevX_->X()=%0.f\n", tmp->prevX_->X());
+				mn->nextX_ = tmp->prevX_->nextX_;
+				mn->prevX_ = tmp->prevX_;
+				tmp->prevX_->nextX_ = mn;
+				tmp->prevX_ = mn;
 			}
 		}
 	}
@@ -581,18 +580,18 @@ WirelessChannel::getAffectedNodes(MobileNode *mn, double radius,
 	// First allocate as much as possibly needed
 	tmpList = new MobileNode*[numNodes_];
 	
-	for(tmp = xListHead_; tmp != NULL; tmp = tmp->nextX_[this->index()]) tmpList[n++] = tmp;
+	for(tmp = xListHead_; tmp != NULL; tmp = tmp->nextX_) tmpList[n++] = tmp;
 	for(int i = 0; i < n; ++i)
 		if(tmpList[i]->speed()!=0.0 && (Scheduler::instance().clock() -
 						tmpList[i]->getUpdateTime()) > XLIST_POSITION_UPDATE_INTERVAL )
 			tmpList[i]->update_position();
 	n=0;
 	
-	for(tmp = mn; tmp != NULL && tmp->X() >= xmin; tmp=tmp->prevX_[this->index()])
+	for(tmp = mn; tmp != NULL && tmp->X() >= xmin; tmp=tmp->prevX_)
 		if(tmp->Y() >= ymin && tmp->Y() <= ymax){
 			tmpList[n++] = tmp;
 		}
-	for(tmp = mn->nextX_[this->index()]; tmp != NULL && tmp->X() <= xmax; tmp=tmp->nextX_[this->index()]){
+	for(tmp = mn->nextX_; tmp != NULL && tmp->X() <= xmax; tmp=tmp->nextX_){
 		if(tmp->Y() >= ymin && tmp->Y() <= ymax){
 			tmpList[n++] = tmp;
 		}
