@@ -49,7 +49,6 @@
 #define MN_POSITION_UPDATE_INTERVAL	30.0   // seconds
 #define MAX_SPEED			5.0    // meters per second (33.55 mph)
 #define MIN_SPEED			0.0
-#define MAX_CHANNEL			5
 
 #include "object.h"
 #include "trace.h"
@@ -128,8 +127,10 @@ public:
 	double	distance(MobileNode*);
 	double	propdelay(MobileNode*);
 	void	start(void);
-    void getLoc(double *x, double *y, double *z);
-        inline void getVelo(double *dx, double *dy, double *dz) {
+    inline void getLoc(double *x, double *y, double *z){
+    	update_position();  *x = X_; *y = Y_; *z = Z_;
+    }
+    inline void getVelo(double *dx, double *dy, double *dz) {
 		*dx = dX_ * speed_; *dy = dY_ * speed_; *dz = 0.0;
 	}
 	inline MobileNode* nextnode() { return link_.le_next; }
@@ -160,8 +161,8 @@ public:
 	virtual void idle_energy_patch(float, float);
 
 	/* For list-keeper */
-	MobileNode* nextX_[MAX_CHANNEL];
-	MobileNode* prevX_[MAX_CHANNEL];
+	MobileNode* nextX_;
+	MobileNode* prevX_;
 	
 protected:
 	/*
