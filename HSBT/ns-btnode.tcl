@@ -166,6 +166,302 @@ Node/BTNode instproc init args {
 	$self setup [AddrParams addr2id $args] $phy_ $bb_ $lmp_ $l2cap_ $bnep_ $sdp_ $a2mp_
 }
 
+
+##############Start Add 802.11 interface#################
+# How to add PAL to the bluetooth node
+#
+#set val(chan)   Channel/WirelessChannel    ;# channel type
+#set val(prop)   Propagation/TwoRayGround   ;# radio-propagation model
+#set val(palType) PAL/802_11
+#set topo       [new Topography]
+#set chan [new $val(chan)];#Create wireless channel
+#FIXME : set a2mp [$node set am2p_]
+#FIXME : $a2mp add-PAL $val(palType)$topo $chan $val(prop)
+		
+A2MP instproc add-PAL {palType topo channel pmodel} {
+	if {$palType == "PAL/802_11"} {
+		$self instvar btnode_ l2cap_ ampNumber_ pal_
+		set ns [Simulator instance]
+		set imepflag [$ns imep-support]
+		set t $ampNumber_
+		incr ampNumber_
+		
+		set pal_($t)	[new $palType]
+		
+		set netif	[new Phy/WirelessPhy]		;# interface
+		set mac		[new Mac/802_11]		;# mac layer
+        	set ant		[new Antenna/OmniAntenna]
+		
+		
+		set namfp [$ns get-nam-traceall]
+		
+		######### I have no idea what are the following lines needed for ##########
+		# errProc_ and FECProc_ are an option unlike other 
+	        # parameters for node interface
+        	$ns instvar inerrProc_ outerrProc_ FECProc_
+		if ![info exist inerrProc_] {
+			set inerrProc_ ""
+		}
+		if ![info exist outerrProc_] {
+			set outerrProc_ ""
+		}
+		if ![info exist FECProc_] {
+			set FECProc_ ""
+		}
+		set inerr ""
+		if {$inerrProc_ != ""} {
+			set inerr [$inerrProc_]
+		}
+		set outerr ""
+		if {$outerrProc_ != ""} {
+			set outerr [$outerrProc_]
+		}
+		set fec ""
+		if {$FECProc_ != ""} {
+			set fec [$FECProc_]
+		}
+		###########################################################################
+		
+		###############################IMEP Beaconing #############################
+#	        if {$imepflag == "ON" } {              
+#			# IMEP layer
+#			set imep [new Agent/IMEP [$btnode_ id]]
+#			set drpT [$self mobility-trace Drop "RTR"]
+#			if { $namfp != "" } {
+#				$drpT namattach $namfp
+#			}
+#			$imep drop-target $drpT
+#			$ns at 0.[$btnode_ id] "$imep start"   ;# start beacon timer
+#	        }
+#		if {$imepflag == "ON" } {
+#			$imep recvtarget [$self entry]
+#			$imep sendtarget $ll
+#			$ll up-target $imep
+#	        } else {
+#			$ll up-target [$self entry]
+#		}
+		#############################################################################
+		#
+		# Local Variables
+		#
+		set nullAgent_ [$ns set nullAgent_]
+		
+		
+		#
+		# PAL Layer
+		#
+		$pal_($t) up-target $l2cap_
+		$pal_($t) down-target $mac
+	
+	
+		#
+		# Interface Queue
+		# TODO : do those changes by adding another interface queue to the L2CAP
+	#	$ifq target $mac
+	#	$ifq set limit_ $qlen
+	#	if {$imepflag != ""} {
+	#		set drpT [$self mobility-trace Drop "IFQ"]
+	#	} else {
+	#		set drpT [cmu-trace Drop "IFQ" $self]
+	#        }
+	#	$ifq drop-target $drpT
+	#	if { $namfp != "" } {
+	#		$drpT namattach $namfp
+	#	}
+	#	if {[$ifq info class] == "Queue/XCP"} {		
+	#		$mac set bandwidth_ [$ll set bandwidth_]
+	#		$mac set delay_ [$ll set delay_]
+	#		$ifq set-link-capacity [$mac set bandwidth_]
+	#		$ifq queue-limit $qlen
+	#		$ifq link $ll
+	#		$ifq reset
+	#		
+	#	}
+	
+		#
+		# Mac Layer
+		#
+		$mac up-target $pal_($t)
+		$mac netif $netif
+		
+	
+		if {$outerr == "" && $fec == ""} {
+			$mac down-target $netif
+		} elseif {$outerr != "" && $fec == ""} {
+			$mac down-target $outerr
+			$outerr target $netif
+		} elseif {$outerr == "" && $fec != ""} {
+			$mac down-target $fec
+			$fec down-target $netif
+		} else {
+			$mac down-target $fec
+			$fec down-target $outerr
+			$err target $netif
+		}
+		#FIXME : see how to implement the god for bluetooth nodes
+		#	set god_ [God instance]
+		#        if {$mactype == "Mac/802_11"} {
+		#		$mac nodes [$god_ num_nodes]
+		#	}
+		
+		
+		#
+		# Network Interface
+		#
+		#if {$fec == ""} {
+	        #		$netif up-target $mac
+		#} else {
+	        #		$netif up-target $fec
+		#	$fec up-target $mac
+		#}
+	
+		$netif channel $channel
+		if {$inerr == "" && $fec == ""} {
+			$netif up-target $mac
+		} elseif {$inerr != "" && $fec == ""} {
+			$netif up-target $inerr
+			$inerr target $mac
+		} elseif {$err == "" && $fec != ""} {
+			$netif up-target $fec
+			$fec up-target $mac
+		} else {
+			$netif up-target $inerr
+			$inerr target $fec
+			$fec up-target $mac
+		}
+	
+		$netif propagation $pmodel	;# Propagation Model
+		#$netif node $pal_($t)		;#Test: add the interface to the 802_11PAL which extends mobilenode Bind PAL <---> interface
+		$netif node $btnode_		;# Bind node <---> interface (checked (mac/wirelessphy.cc): OK)
+		$netif antenna $ant
+		#
+		# Physical Channel
+		#
+		$channel addif $netif
+		
+	        # List-based improvement
+		# For nodes talking to multiple channels this should
+		# be called multiple times for each channel
+		$channel add-node $btnode_	;#FIXME : (mac/channel.cc)could lead to a problem as it deals 
+						;#with mobile nodes WirelessChannel::addNodeToList(MobileNode *mn)	
+	
+		# let topo keep handle of channel
+		$topo channel $channel
+		# ============================================================
+	
+		if { [Simulator set MacTrace_] == "ON" } {
+			#
+			# Trace RTS/CTS/ACK Packets
+			#
+			if {$imepflag != ""} {
+				set rcvT [$btnode_ mobility-trace Recv "MAC"]
+			} else {
+				set rcvT [cmu-trace Recv "MAC" $btnode_]
+			}
+			$mac log-target $rcvT
+			if { $namfp != "" } {
+				$rcvT namattach $namfp
+			}
+			#
+			# Trace Sent Packets
+			#
+			if {$imepflag != ""} {
+				set sndT [$btnode_ mobility-trace Send "MAC"]
+			} else {
+				set sndT [cmu-trace Send "MAC" $btnode_]
+			}
+			$sndT target [$mac down-target]
+			$mac down-target $sndT
+			if { $namfp != "" } {
+				$sndT namattach $namfp
+			}
+			#
+			# Trace Received Packets
+			#
+			if {$imepflag != ""} {
+				set rcvT [$btnode_ mobility-trace Recv "MAC"]
+			} else {
+				set rcvT [cmu-trace Recv "MAC" $btnode_]
+			}
+			$rcvT target [$mac up-target]
+			$mac up-target $rcvT
+			if { $namfp != "" } {
+				$rcvT namattach $namfp
+			}
+			#
+			# Trace Dropped Packets
+			#
+			if {$imepflag != ""} {
+				set drpT [$btnode_ mobility-trace Drop "MAC"]
+			} else {
+				set drpT [cmu-trace Drop "MAC" $btnode_]
+			}
+			$mac drop-target $drpT
+			if { $namfp != "" } {
+				$drpT namattach $namfp
+			}
+		} else {
+			$mac log-target [$ns set nullAgent_]
+			$mac drop-target [$ns set nullAgent_]
+		}
+	
+	# change wrt Mike's code
+	       if { [Simulator set EotTrace_] == "ON" } {
+	               #
+	               # Also trace end of transmission time for packets
+	               #
+	
+	               if {$imepflag != ""} {
+	                       set eotT [$btnode_ mobility-trace EOT "MAC"]
+	               } else {
+	                       set eoT [cmu-trace EOT "MAC" $btnode_]
+	               }
+	               $mac eot-target $eotT
+	       }
+	
+	
+	
+		# ============================================================
+		
+		#$pal_($t) addif $netif 	;#Test: add the interface to the 802_11PAL which extends mobilenode
+		$btnode_ addif $netif	;#FIXED and checked : add the wireless phy to the node (mobilenode.cc) now added to bt-node.cc
+		
+		$pal_($t) setup [AddrParams addr2id $args] $mac $l2cap_ $self $btnode_
+		
+	}
+	else
+	{
+		error "Currently only these PAL values are supported (add-PAL): PAL/802_11"
+	}
+
+
+
+}
+
+##############End Add 802.11 interface###################
+
+################ modified monility-trace procedure for the btnode ########
+
+Node/BTNode instproc mobility-trace { ttype atype } {
+	set ns [Simulator instance]
+        set tracefd [$ns get-ns-traceall]
+        if { $tracefd == "" } {
+	        puts "Warning: You have not defined you tracefile yet!"
+	        puts "Please use trace-all command to define it."
+		return ""
+	}
+	set T [new CMUTrace/$ttype $atype]
+	$T newtrace [Simulator set WirelessNewTrace_]
+	$T tagged [Simulator set TaggedTrace_]
+	$T target [$ns nullagent]
+	$T attach $tracefd
+        $T set src_ [$self id]
+        $T node $self
+	return $T
+}
+###########################################################################
+
+
 Node/BTNode instproc rt {rtagent} {
         $self instvar mac_ bnep_ sdp_ a2mp_ l2cap_ lmp_ bb_ ll_ arptable_ classifier_ dmux_ entry_ ragent_ 
 
