@@ -342,7 +342,7 @@ A2MP instproc add-PAL {palType topo channel pmodel} {
 	        # List-based improvement
 		# For nodes talking to multiple channels this should
 		# be called multiple times for each channel
-		$channel add-node $btnode_	;#FIXME : (mac/channel.cc)could lead to a problem as it deals 
+		$channel add-node $btnode_	;#FIXED need testing : (mac/channel.cc)could lead to a problem as it deals 
 						;#with mobile nodes WirelessChannel::addNodeToList(MobileNode *mn)	
 	
 		# let topo keep handle of channel
