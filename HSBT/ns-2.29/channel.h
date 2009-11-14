@@ -116,14 +116,15 @@ private:
 	/* For list-keeper, channel keeps list of mobilenodes 
 	   listening on to it */
 	int numNodes_;
-	MobileNode *xListHead_;
+	Node *xListHead_;
 	bool sorted_;
-	void addNodeToList(MobileNode *mn);
-	void removeNodeFromList(MobileNode *mn);
+	void addNodeToList(Node *mn);
+	void removeNodeFromList(Node *mn);
 	void sortLists(void);
-	void updateNodesList(class MobileNode *mn, double oldX);
-	MobileNode **getAffectedNodes(MobileNode *mn, double radius, int *numAffectedNodes);
-	
+	void updateNodesList(class Node *mn, double oldX);
+	inline void updateNodesList(class MobileNode *mn, double oldX){updateNodesList((Node*)mn,oldX);}
+	Node **getAffectedNodes(Node *mn, double radius, int *numAffectedNodes);
+
 protected:
 	static double distCST_;        
         static double highestAntennaZ_;
