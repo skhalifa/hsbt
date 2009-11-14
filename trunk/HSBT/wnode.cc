@@ -501,3 +501,8 @@ WNode *WNode::lookupNode(int n)
 
     return NULL;
 }
+double
+WNode::propdelay(Node *m)
+{
+	return distance((WNode*)m) / SPEED_OF_LIGHT;
+}
