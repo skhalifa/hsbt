@@ -127,6 +127,15 @@ class Node : public ParentNode {
 public:
 	Node(void);
 	~Node();
+	//Shady : add  virtual functions implemented in both wnode and mobilenode
+	virtual double X() { fprintf(stdout, "x node\n");return 0.0;}
+	virtual double Y() { return 0.0;}
+	virtual double Z() { return 0.0;}
+	virtual double speed(){ return 0.0;}
+	virtual double getUpdateTime(){ return 0.0;}
+	virtual void update_position(){}
+	virtual double	propdelay(Node*){ return 0.0;}
+	/******************** end virtual functions ***********************/
 
 	inline int address() { return address_;}
 	inline int nodeid() { return nodeid_;}
