@@ -45,6 +45,7 @@
 #define MAXTRACEFILES 16
 #define WNODE_IFQ_TYPE "Queue/DropTail"
 #define WNODE_IFQ_LIMIT -1
+#define SPEED_OF_LIGHT	300000000		// 3 * 10^8 m/s
 
 class WNode;
 class RoutingIF {
@@ -141,9 +142,13 @@ class WNode:public Node {
     virtual void setdest(double destx, double desty, double destz, 
 		         double speed) {}
 
-    double X() { return X_; }
+    double X() { fprintf(stdout, "x Wnode\n");return X_; }
     double Y() { return Y_; }
     double Z() { return Z_; }
+    inline double speed() { return speed_; }
+    inline double getUpdateTime() { return position_update_time_; }
+    inline void update_position(){}//TODO decide what to write here
+    double propdelay(Node*);
     void setPos(double x, double y, double z = 0);
 
     inline double distance(double x1, double y1, double z1, 
@@ -210,7 +215,12 @@ class WNode:public Node {
     double X_;
     double Y_;
     double Z_;
-    // double speed_;
+
+
+    double speed_;//FIXME
+	double position_update_time_;//FIXME
+    double position_update_interval_;//FIXME
+
     double dX_;
     double dY_;
     double dZ_;
