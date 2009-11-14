@@ -402,7 +402,7 @@ WirelessChannel::addNodeToList(MobileNode *mn)
 		xListHead_->nextX_ = NULL;
 		xListHead_->prevX_ = NULL;
 	} else {
-		for (tmp = xListHead_; tmp->nextX_[this->index()] != NULL; tmp=tmp->nextX_);
+		for (tmp = xListHead_; tmp->nextX_ != NULL; tmp=tmp->nextX_);
 		tmp->nextX_ = mn;
 		mn->prevX_ = tmp;
 		mn->nextX_ = NULL;
