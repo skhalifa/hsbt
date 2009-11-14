@@ -594,9 +594,9 @@ MobileNode::distance(MobileNode *m)
 }
 
 double
-MobileNode::propdelay(MobileNode *m)
+MobileNode::propdelay(Node *m)
 {
-	return distance(m) / SPEED_OF_LIGHT;
+	return distance((MobileNode*)m) / SPEED_OF_LIGHT;
 }
 
 void 

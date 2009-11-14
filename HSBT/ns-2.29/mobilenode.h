@@ -125,7 +125,7 @@ public:
 	virtual int command(int argc, const char*const* argv);
 
 	double	distance(MobileNode*);
-	double	propdelay(MobileNode*);
+	double	propdelay(Node*);
 	void	start(void);
     inline void getLoc(double *x, double *y, double *z){
     	update_position();  *x = X_; *y = Y_; *z = Z_;
@@ -142,7 +142,7 @@ public:
 	void dump(void);
 
 	inline MobileNode*& next() { return next_; }
-	inline double X() { return X_; }
+	inline double X() { fprintf(stdout, "x Mobilenode\n");return X_; }
 	inline double Y() { return Y_; }
 	inline double Z() { return Z_; }
 	inline double speed() { return speed_; }
@@ -161,9 +161,9 @@ public:
 	virtual void idle_energy_patch(float, float);
 
 	/* For list-keeper */
-	MobileNode* nextX_;
+	/*MobileNode* nextX_;
 	MobileNode* prevX_;
-	
+	*/
 protected:
 	/*
 	 * Last time the position of this node was updated.
