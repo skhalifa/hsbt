@@ -59,6 +59,7 @@ static const char rcsid[] =
 #include "phy.h"
 #include "wireless-phy.h"
 #include "mobilenode.h"
+#include "node.h"
 #include "ip.h"
 #include "dsr/hdr_sr.h"
 #include "gridkeeper.h"
@@ -300,11 +301,11 @@ int WirelessChannel::command(int argc, const char*const* argv)
 			return TCL_ERROR;
 		}
 		if (strcmp(argv[1], "add-node") == 0) {
-			addNodeToList((MobileNode*) obj);
+			addNodeToList((Node*) obj);
 			return TCL_OK;
 		}
 		else if (strcmp(argv[1], "remove-node") == 0) {
-			removeNodeFromList((MobileNode*) obj);
+			removeNodeFromList((Node*) obj);
 			return TCL_OK;
 		}
 	}
@@ -333,6 +334,7 @@ WirelessChannel::sendUp(Packet* p, Phy *tifp)
 	 hdr->direction() = hdr_cmn::UP;
 
 	 // still keep grid-keeper around ??
+	 //Shady : not supported for btnodes
 	 if (GridKeeper::instance()) {
 	    int i;
 	    GridKeeper* gk = GridKeeper::instance();
@@ -360,8 +362,8 @@ WirelessChannel::sendUp(Packet* p, Phy *tifp)
 	 
 	 } else { // use list-based improvement
 	 
-		 MobileNode *mtnode = (MobileNode *) tnode;
-		 MobileNode **affectedNodes;// **aN;
+		 Node *mtnode = tnode;
+		 Node **affectedNodes;// **aN;
 		 int numAffectedNodes = -1, i;
 		 
 		 if(!sorted_){
@@ -391,9 +393,9 @@ WirelessChannel::sendUp(Packet* p, Phy *tifp)
 
 
 void
-WirelessChannel::addNodeToList(MobileNode *mn)
+WirelessChannel::addNodeToList(Node *mn)
 {
-	MobileNode *tmp;
+	Node *tmp;
 
 	// create list of mobilenodes for this channel
 	if (xListHead_ == NULL) {
@@ -411,9 +413,9 @@ WirelessChannel::addNodeToList(MobileNode *mn)
 }
 
 void
-WirelessChannel::removeNodeFromList(MobileNode *mn) {
+WirelessChannel::removeNodeFromList(Node *mn) {
 	
-	MobileNode *tmp;
+	Node *tmp;
 	// Find node in list
 	for (tmp = xListHead_; tmp->nextX_ != NULL; tmp=tmp->nextX_) {
 		if (tmp == mn) {
@@ -437,13 +439,14 @@ WirelessChannel::removeNodeFromList(MobileNode *mn) {
 void
 WirelessChannel::sortLists(void) {
 	bool flag = true;
-	MobileNode *m, *q;
+	Node *m, *q;
 
 	sorted_ = true;
 	
 	fprintf(stderr, "SORTING LISTS ...");
 	/* Buble sort algorithm */
 	// SORT x-list
+	//TODO: check this function works (virtual functions in the  node.h)
 	while(flag) {
 		flag = false;
 		m = xListHead_;
@@ -476,9 +479,9 @@ WirelessChannel::sortLists(void) {
 }
 
 void
-WirelessChannel::updateNodesList(class MobileNode *mn, double oldX) {
+WirelessChannel::updateNodesList(class Node *mn, double oldX) {
 	
-	MobileNode* tmp;
+	Node* tmp;
 	double X = mn->X();
 	bool skipX=false;
 	
@@ -558,13 +561,13 @@ WirelessChannel::updateNodesList(class MobileNode *mn, double oldX) {
 }
 
 
-MobileNode **
-WirelessChannel::getAffectedNodes(MobileNode *mn, double radius,
+Node **
+WirelessChannel::getAffectedNodes(Node *mn, double radius,
 				  int *numAffectedNodes)
 {
 	double xmin, xmax, ymin, ymax;
 	int n = 0;
-	MobileNode *tmp, **list, **tmpList;
+	Node *tmp, **list, **tmpList;
 
 	if (xListHead_ == NULL) {
 		*numAffectedNodes=-1;
@@ -578,8 +581,8 @@ WirelessChannel::getAffectedNodes(MobileNode *mn, double radius,
 	ymax = mn->Y() + radius;
 	
 	// First allocate as much as possibly needed
-	tmpList = new MobileNode*[numNodes_];
-	
+	tmpList = new Node*[numNodes_];
+	//TODO:check speed() is working
 	for(tmp = xListHead_; tmp != NULL; tmp = tmp->nextX_) tmpList[n++] = tmp;
 	for(int i = 0; i < n; ++i)
 		if(tmpList[i]->speed()!=0.0 && (Scheduler::instance().clock() -
@@ -597,8 +600,8 @@ WirelessChannel::getAffectedNodes(MobileNode *mn, double radius,
 		}
 	}
 	
-	list = new MobileNode*[n];
-	memcpy(list, tmpList, n * sizeof(MobileNode *));
+	list = new Node*[n];
+	memcpy(list, tmpList, n * sizeof(Node *));//TODO:check this is working memcpy(list, tmpList, n * sizeof(MobileNode *));
 	delete [] tmpList;
          
 	*numAffectedNodes = n;
@@ -639,11 +642,10 @@ double
 WirelessChannel::get_pdelay(Node* tnode, Node* rnode)
 {
 	// Scheduler	&s = Scheduler::instance();
-	MobileNode* tmnode = (MobileNode*)tnode;
-	MobileNode* rmnode = (MobileNode*)rnode;
+
 	double propdelay = 0;
 	
-	propdelay = tmnode->propdelay(rmnode);
+	propdelay = tnode->propdelay(rnode);
 
 	assert(propdelay >= 0.0);
 	if (propdelay == 0.0) {
