@@ -61,6 +61,8 @@ Packet Format
 #include "agent.h"
 #include "baseband.h"
 #include "lmp.h"
+#include "amp-PAL.h"
+#include "amp-PAL802_11.h"
 
 #define MAX_AMP_NUMBER						3
 //================
@@ -224,7 +226,7 @@ class A2MP:public Connector {
 
     //Alternative mac/phy info
     int ampNumber_;
-    PAL * pal_[MAX_AMP_NUMBER];
+    PAL *pal_[MAX_AMP_NUMBER];
 
 };
 
