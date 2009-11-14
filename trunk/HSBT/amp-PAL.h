@@ -34,11 +34,12 @@
 #ifndef __ns_amp_PAL_h__
 #define __ns_amp_PAL_h__
 
-#include "queue.h"
-#include "mac-802_11.h"
+//#include "queue.h"
+//#include "mac-802_11.h"
 //#include "lmp-link.h"
 //#include "rendpoint.h"
 //#include "bt-channel.h"
+#include "mac.h"
 
 
 
@@ -58,9 +59,9 @@ class PAL:public BiConnector {
   public:
 
 
-    Mac * mac_;
-    L2CAP * l2cap_;
-    A2MP * a2mp_;
+    Mac *mac_;
+    L2CAP *l2cap_;
+    A2MP *a2mp_;
     BTNode *btnode_;
     Bd_info *_my_info;
     Bd_info *_bd;		// bt device database
