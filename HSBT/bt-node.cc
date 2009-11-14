@@ -41,6 +41,7 @@
 #include "scat-form-law.h"
 #include "lmp-piconet.h"
 #include "lmp-link.h"
+#include "wireless-phy.h"
 
 static class BTNodeClass:public TclClass {
   public:
@@ -539,8 +540,7 @@ int BTNode::command(int argc, const char *const *argv)
 	    lmp_->HCI_Disconnect(ag1->connh, reason);
 	    return (TCL_OK);
 	} else if(strcmp(argv[1], "addif") == 0) {
-		WirelessPhy *n = (WirelessPhy*)
-			TclObject::lookup(argv[2]);
+		WirelessPhy *n = (WirelessPhy*) TclObject::lookup(argv[2]);
 		if(n == 0)
 			return TCL_ERROR;
 		n->insertnode(&ifhead_);
