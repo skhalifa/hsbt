@@ -34,51 +34,51 @@
 #ifndef __ns_amp_PAL802_11_h__
 #define __ns_amp_PAL802_11_h__
 
-#include "queue.h"
-#include "mac-802_11.h"
+
+#include "amp-PAL.h"
 //#include "lmp-link.h"
 //#include "rendpoint.h"
 //#include "bt-channel.h"
 
-
-
-class L2CAPChannel;
-class ConnectionHandle;
-class PAL802_11;//class LMP;
-//class LMPLink;
-
-class PAL802_11:public BiConnector {
-    friend class BTNode;
-
-public:
-    uchar PAL_Version_=0x01;//TODO:get from Bluetooth assigned numbers
-	u_int16_t PAL_Sub_version_=0x0001;//vendor specified
-	u_int32_t Total_Bandwidth_=30000;//for now assign 30Mbps //Bandwidth unit is Kbps (4octets)
-	u_int32_t Max_Guaranteed_Bandwidth_; //= Total_Bandwidth	- sum of all active connections
-	u_int32_t Min_Latencay_=50;//TODO: get value from vol5 part A p17 //for now assign 50microsecond //latency unit is microseconds(4octets)
-	uchar Max_PDU_Size_=2312;// bytes
-	uchar Controller_Type_=0x01;//802.11 AMP
-	u_int16_t palCapabilities_=0x0000;//Guaranteed service type is not supported by this PAL(2octets)
-	u_int16_t AMP_ASSOC_Length_=0x0000;//for now set to 0 //max size in octets of the requested AMP Assoc Structure(2octets)
-	u_int32_t Max_Flush_Timeout_=0xFFFFFFFF;//Max time period in microseconds AMP device attempt to transmit a frame on a guaranteed link (currently set to infinity)
-	u_int32_t Best_Effort_Flush_Timeout_=0xFFFFFFFF;//Max time period in microseconds AMP device attempt to transmit a frame on a best effort link (currently set to infinity)
-	uchar Link_Quality_=0xFF;// Range 0x00<N<0xFF where 0x00 is link not available
-	int8_t RSSI_=0xAA;//arriving signal strength in dBm (0x81 or -127dBm is not available) best case -42dBm or 0xAA
-	uchar Short_Range_Mode_=0x00;//disabled change to 0x01 to enable
+	#define PAL_Version_ 0x01//TODO:get from Bluetooth assigned numbers
+	#define PAL_Sub_version_ 0x0001//vendor specified
+	#define Total_Bandwidth_ 30000//for now assign 30Mbps //Bandwidth unit is Kbps (4octets)
+	#define Min_Latencay_ 50//TODO: get value from vol5 part A p17 //for now assign 50microsecond //latency unit is microseconds(4octets)
+	#define Max_PDU_Size_ 2312// bytes
+	#define Controller_Type_ 0x01//802.11 AMP
+	#define palCapabilities_ 0x0000//Guaranteed service type is not supported by this PAL(2octets)
+	#define AMP_ASSOC_Length_ 0x0000//for now set to 0 //max size in octets of the requested AMP Assoc Structure(2octets)
+	#define Max_Flush_Timeout_ 0xFFFFFFFF//Max time period in microseconds AMP device attempt to transmit a frame on a guaranteed link (currently set to infinity)
+	#define Best_Effort_Flush_Timeout_ 0xFFFFFFFF//Max time period in microseconds AMP device attempt to transmit a frame on a best effort link (currently set to infinity)
+	#define Link_Quality_ 0xFF// Range 0x00<N<0xFF where 0x00 is link not available
+	#define RSSI_ 0xAA//arriving signal strength in dBm (0x81 or -127dBm is not available) best case -42dBm or 0xAA
+	#define Short_Range_Mode_ 0x00//disabled change to 0x01 to enable
 
 	////////////////////////////////////
     //          Constants	          //
     ////////////////////////////////////
-	int ConnectionAcceptTimeOut=5;//in seconds
-	int Max80211PALPDUSize=1492;//in octets
-	int Max80211AMPASSOCLen=672;//in Octets
-	int MinGUserPrio=4;//min priority in the guaranteed link
-	int MaxGUserPrio=7;//max priority in the guaranteed link
-	int BEUserPrio0=0;//priority in the best effort link
-	int BEUserPrio1=3;//priority in the best effort link
-	int Max80211BeaconPeriod=2000;//in millisecond
-	int Max80211AMPASSOCLen=672;//in Octets
-	int ShortRangeModePowerMax_=4;//in dBm
+	#define ConnectionAcceptTimeOut 5//in seconds
+	#define Max80211PALPDUSize 1492//in octets
+	#define Max80211AMPASSOCLen 672//in Octets
+	#define MinGUserPrio 4//min priority in the guaranteed link
+	#define MaxGUserPrio 7//max priority in the guaranteed link
+	#define BEUserPrio0 0//priority in the best effort link
+	#define BEUserPrio1 3//priority in the best effort link
+	#define Max80211BeaconPeriod 2000//in millisecond
+	#define Max80211AMPASSOCLen 672//in Octets
+	#define ShortRangeModePowerMax_ 4//in dBm
+
+
+class L2CAPChannel;
+class ConnectionHandle;
+class PAL802_11;
+//class LMP;
+//class LMPLink;
+
+class PAL802_11:public PAL {
+    friend class BTNode;
+
+public:
 
 	////////////////////////////////////
     //          Data Structures       //
@@ -104,7 +104,7 @@ public:
 		uchar* value_;
 
 		AMP_ASSOC(TypeID typeID,u_int16_t length,uchar* value):typeID_(typeID),length_(length),value_(value) {}
-
+		AMP_ASSOC(){}
 	};
 
 
@@ -141,10 +141,10 @@ public:
 	    };
 	    EventType eventType;
 	    AMP_ASSOC amp_assoc_;
-	    uchar Short_Range_Mode_;
+	    uchar short_Range_Mode_;
 
 	    PALEvent(AMP_ASSOC amp_assoc):eventType(Channel_Selected),amp_assoc_(amp_assoc) {}
-	    PALEvent(uchar Short_Range_Mode):eventType(Short_Range_Mode_Change_Completed),Short_Range_Mode_(Short_Range_Mode) {}
+	    PALEvent(uchar Short_Range_Mode):eventType(Short_Range_Mode_Change_Completed),short_Range_Mode_(Short_Range_Mode) {}
 
 	};
 
@@ -167,13 +167,7 @@ public:
     void sendUp(Packet *, Handler *);
 
   public:
-
-    Mac802_11 * mac_;
-    L2CAP *l2cap_;
-    BTNode *node_;
-    Bd_info *_my_info;
-    Bd_info *_bd;		// bt device database
-
+    double Max_Guaranteed_Bandwidth_; //= Total_Bandwidth	- sum of all active connections
     void checkLink();
     PAL802_11();
     void on();
