@@ -41,6 +41,7 @@ setlink $dir/mac arp.h ../$DST
 setlink $dir/mac channel.cc ../$DST
 setlink $dir/mac channel.h ../$DST
 setlink $dir/mac mac-802_11.cc ../$DST
+setlink $dir/mac mac-802_11.h ../$DST
 setlink $dir/mac wireless-phy.cc ../$DST
 setlink $dir/mac wireless-phy.h ../$DST
 setlink $dir/aodv aodv.h ../$DST
