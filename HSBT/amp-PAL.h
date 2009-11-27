@@ -39,15 +39,8 @@
 //#include "lmp-link.h"
 //#include "rendpoint.h"
 //#include "bt-channel.h"
-#include "mac.h"
+//#include "mac.h"
 
-
-
-class L2CAPChannel;
-class ConnectionHandle;
-class PAL;
-//class LMP;
-//class LMPLink;
 
 class PAL:public BiConnector {
     friend class BTNode;
@@ -58,45 +51,66 @@ class PAL:public BiConnector {
 
   public:
 
-
-    Mac *mac_;
-    L2CAP *l2cap_;
     A2MP *a2mp_;
-    BTNode *btnode_;
-    Bd_info *_my_info;
-    Bd_info *_bd;		// bt device database
+    Bd_info *_my_info;	//fixme : what to do with it??
+    Bd_info *_bd;		// bt device database //fixme : what to do with it??
     bd_addr_t ad;
 
-    PAL();
-    virtual void setup(bd_addr_t ad, Mac * mac, L2CAP * l2cap,A2MP * a2mp, BTNode * btnode) = 0 ;
-    void on();
-    void reset();
-    void _init();
+    virtual void setup(bd_addr_t ad,A2MP * a2mp) = 0 ;//fixme : see if they can be written once for all PALs
+    virtual void on()  = 0;//fixme : see if they can be written once for all PALs
+    virtual void _init() = 0;//fixme : see if they can be written once for all PALs
     ////////////////////////////////////
     //          HCI Interface         //
     ////////////////////////////////////
 	//HCI Commands
 	///////////////////////////////////
-	void HCI_Reset();
-	uchar* HCI_Read_Local_Version_Info();
-	uchar* HCI_Read_Local_AMP_Info();
-	uchar* HCI_Read_Local_AMP_Assoc();
-	int HCI_Read_Failed_Contact_Counter(/*logical link*/);
-	uchar HCI_Read_Link_Quality();
-	int HCI_Read_RSSI();
-	uchar HCI_Read_Best_Effort_Flush_Timeout();
-	uchar* HCI_Write_Remote_AMP_Assoc();
-	void HCI_Write_Best_Effort_Flush_Timeout(uchar);
-	void HCI_Flow_Spec_modify();
-	void HCI_Physical_link_Loss_Early_Warning();
-	void HCI_Physical_Link_Recovery();
-	void HCI_Short_Range_mode();
-	void HCI_Create_Physical_Link();
-	void HCI_Accept_Physical_Link();
-	void HCI_Channel_Select();
-	void HCI_Disconnect_Physical_Link();
-	void HCI_Create_Logical_link();
-	void HCI_Accept_Logical_link();
+
+    //PAL Manager functions
+    //implements global operations includes responding to host requests for AMP info and performing PAL reset
+    virtual uchar* HCI_Read_Local_Version_Info()= 0;
+    virtual uchar* HCI_Read_Local_AMP_Info()= 0;
+    virtual void HCI_Reset()= 0;
+    virtual int HCI_Read_Failed_Contact_Counter(/*logical link*/)= 0;
+    virtual uchar HCI_Read_Link_Quality()= 0;
+    virtual int HCI_Read_RSSI()= 0;
+    virtual void HCI_Short_Range_mode()= 0;
+    virtual void HCI_Write_Best_Effort_Flush_Timeout(uchar)= 0;
+    virtual uchar HCI_Read_Best_Effort_Flush_Timeout()= 0;
+
+    //Events
+    virtual void Physical_link_Loss_Early_Warning()= 0;
+    virtual void Physical_Link_Recovery()= 0;
+    virtual void Channel_Selected()= 0;
+    virtual void Short_Range_Mode_Change_Completed() =0;
+
+    //Physical Link Manager functions
+    //Implements operations on physical link includes physical link creation/acceptance/deletion plus channel selection
+    //, security establishment and maintenance
+    virtual void HCI_Create_Physical_Link()= 0;
+    virtual void HCI_Accept_Physical_Link()= 0;
+    virtual void HCI_Disconnect_Physical_Link()= 0;
+
+    //Actions
+    virtual void Determine_Selected_Channel() =0;
+    virtual void Signal_MAC_Start_On_Channel(/*physical channel*/) =0;
+    virtual void MAC_Connect(/*physical channel*/) =0;
+    virtual void MAC_Initiate_Handshake(/*physical channel*/) =0;
+    virtual void Cancel_MAC_Connect_Operation(/*physical channel*/) =0;
+    virtual void Signal_MAC_Start_To_Disconnect(/*physical channel*/) =0;
+    //Logical Link Manager functions
+    //Implements operations on logical link includes logical link creation/deletion and applying QoS
+    virtual void HCI_Flow_Spec_modify()= 0;
+    virtual void HCI_Create_Logical_link()= 0;
+    virtual void HCI_Accept_Logical_link()= 0;
+    virtual void HCI_Disconnect_Logical_link()= 0;
+    //Data Manager functions
+    //Perform operations on data packets includes : transmit/receive/buffer management
+    virtual void Encapsulate_Packet() =0;
+
+
+    //virtual uchar* HCI_Read_Local_AMP_Assoc()= 0;
+    //virtual uchar* HCI_Write_Remote_AMP_Assoc()= 0;
+
 };
 
 
