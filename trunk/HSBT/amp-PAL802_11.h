@@ -36,22 +36,18 @@
 
 
 #include "amp-PAL.h"
-//#include "lmp-link.h"
-//#include "rendpoint.h"
-//#include "bt-channel.h"
+#include "mac-802_11.h"
+
 
 	#define PAL_Version_ 0x01//TODO:get from Bluetooth assigned numbers
 	#define PAL_Sub_version_ 0x0001//vendor specified
 	#define Total_Bandwidth_ 30000//for now assign 30Mbps //Bandwidth unit is Kbps (4octets)
-	#define Min_Latencay_ 50//TODO: get value from vol5 part A p17 //for now assign 50microsecond //latency unit is microseconds(4octets)
-	#define Max_PDU_Size_ 2312// bytes
 	#define Controller_Type_ 0x01//802.11 AMP
 	#define palCapabilities_ 0x0000//Guaranteed service type is not supported by this PAL(2octets)
-	#define AMP_ASSOC_Length_ 0x0000//for now set to 0 //max size in octets of the requested AMP Assoc Structure(2octets)
 	#define Max_Flush_Timeout_ 0xFFFFFFFF//Max time period in microseconds AMP device attempt to transmit a frame on a guaranteed link (currently set to infinity)
 	#define Best_Effort_Flush_Timeout_ 0xFFFFFFFF//Max time period in microseconds AMP device attempt to transmit a frame on a best effort link (currently set to infinity)
-	#define Link_Quality_ 0xFF// Range 0x00<N<0xFF where 0x00 is link not available
-	#define RSSI_ 0xAA//arriving signal strength in dBm (0x81 or -127dBm is not available) best case -42dBm or 0xAA
+	#define Link_Quality_ 0x00// Range 0x00<N<0xFF where 0x00 is link quality indicator is  not available
+	#define RSSI_ 0x81//arriving signal strength in dBm (0x81 or -127dBm is indicator not available) best case -42dBm or 0xAA
 	#define Short_Range_Mode_ 0x00//disabled change to 0x01 to enable
 
 	////////////////////////////////////
@@ -71,13 +67,16 @@
 
 class L2CAPChannel;
 class ConnectionHandle;
-class PAL802_11;
-//class LMP;
-//class LMPLink;
+
 
 class PAL802_11:public PAL {
     friend class BTNode;
-
+    friend class  A2MP;
+public:
+  u_int32_t Max_Guaranteed_Bandwidth_; //= Total_Bandwidth	- sum of all active connections
+  u_int32_t Min_Latencay_;//value = mac DIFS + CWmin //for now assign 50microsecond //latency unit is microseconds(4octets)
+  u_int32_t Max_PDU_Size_;// in octets largest allowed L2CAP PDU size//2312//
+  u_int16_t AMP_ASSOC_Length_;//max size in octets of the requested AMP Assoc Structure(2octets)
 public:
 
 	////////////////////////////////////
@@ -107,8 +106,6 @@ public:
 		AMP_ASSOC(){}
 	};
 
-
-
 	////////////////////////////////////
 	//          HCI Interface         //
 	////////////////////////////////////
@@ -126,6 +123,7 @@ public:
 	    	MAC_Connect_Completed,
 	    	MAC_Connect_Failed,
 	    	MAC_Media_Disconnection_Indeication,
+	    	MAC_Connection_Cancel_indecation,
 	    	HCI_Disconnect_Physical_Link_Request,
 	    	Handshake_Fails,
 	    	Handshake_Succeeds,
@@ -161,44 +159,60 @@ public:
 		Command_Disallowed=0x0C,
 		Success=0x00
 	};
+protected:
+		//send packet to the L2CAP
+	    void sendUp(Packet *, Handler *);
+	    int command(int argc, const char*const* argv);
 
-  protected:
-	//send packet to the L2CAP
-    void sendUp(Packet *, Handler *);
-
-  public:
-    double Max_Guaranteed_Bandwidth_; //= Total_Bandwidth	- sum of all active connections
-    void checkLink();
+public:
     PAL802_11();
-    void on();
-    void reset();
+
+    void on();//fixme : see if they can be written once for all PALs
     void _init();
-    ////////////////////////////////////
-    //          HCI Interface         //
-    ////////////////////////////////////
-	//HCI Commands
-	///////////////////////////////////
-	void HCI_Reset();
-	uchar* HCI_Read_Local_Version_Info();
-	uchar* HCI_Read_Local_AMP_Info();
-	uchar* HCI_Read_Local_AMP_Assoc();
-	int HCI_Read_Failed_Contact_Counter(/*logical link*/);
-	uchar HCI_Read_Link_Quality();
-	int HCI_Read_RSSI();
-	uchar HCI_Read_Best_Effort_Flush_Timeout();
-	uchar* HCI_Write_Remote_AMP_Assoc();
-	void HCI_Write_Best_Effort_Flush_Timeout(uchar);
-	void HCI_Flow_Spec_modify();
-	void HCI_Physical_link_Loss_Early_Warning();
-	void HCI_Physical_Link_Recovery();
-	void HCI_Short_Range_mode();
-	void HCI_Create_Physical_Link();
-	void HCI_Accept_Physical_Link();
-	void HCI_Channel_Select();
-	void HCI_Disconnect_Physical_Link();
-	void HCI_Create_Logical_link();
-	void HCI_Accept_Logical_link();
+    Version_Info* HCI_Read_Local_Version_Info();
+
+    AMP_Info* HCI_Read_Local_AMP_Info();
+    void HCI_Reset();
+    int HCI_Read_Failed_Contact_Counter();
+    u_int8_t HCI_Read_Link_Quality();
+
+    u_int8_t HCI_Read_RSSI();
+
+     void HCI_Short_Range_mode();
+     void HCI_Write_Best_Effort_Flush_Timeout(u_int8_t);
+     u_int8_t HCI_Read_Best_Effort_Flush_Timeout();
+
+    //Events
+     void Physical_link_Loss_Early_Warning();
+     void Physical_Link_Recovery();
+     void Channel_Selected();
+     void Short_Range_Mode_Change_Completed() ;
+
+    //Physical Link Manager functions
+    //Implements operations on physical link includes physical link creation/acceptance/deletion plus channel selection
+    //, security establishment and maintenance
+     void HCI_Create_Physical_Link();
+     void HCI_Accept_Physical_Link();
+     void HCI_Disconnect_Physical_Link();
+
+    //Actions
+     void Determine_Selected_Channel() ;
+     void Signal_MAC_Start_On_Channel(/*physical channel*/) ;
+     void MAC_Connect(/*physical channel*/) ;
+     void MAC_Initiate_Handshake(/*physical channel*/) ;
+     void Cancel_MAC_Connect_Operation(/*physical channel*/) ;
+     void Signal_MAC_Start_To_Disconnect(/*physical channel*/) ;
+    //Logical Link Manager functions
+    //Implements operations on logical link includes logical link creation/deletion and applying QoS
+     void HCI_Flow_Spec_modify();
+     void HCI_Create_Logical_link();
+     void HCI_Accept_Logical_link();
+     void HCI_Disconnect_Logical_link();
+    //Data Manager functions
+    //Perform operations on data packets includes : transmit/receive/buffer management
+     void Encapsulate_Packet() ;
+
 };
 
 
-#endif				// __ns_amp_wifi-palp_h__
+#endif				// __ns_amp_PAL802_11_h__
