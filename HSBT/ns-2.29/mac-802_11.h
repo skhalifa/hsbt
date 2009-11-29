@@ -110,13 +110,13 @@ struct ack_frame {
 // XXX This header does not have its header access function because it shares
 // the same header space with hdr_mac.
 struct hdr_mac802_11 {
-	struct frame_control	dh_fc;
-	u_int16_t		dh_duration;
-	u_char                  dh_ra[ETHER_ADDR_LEN];
-        u_char                  dh_ta[ETHER_ADDR_LEN];
-        u_char                  dh_3a[ETHER_ADDR_LEN];
-	u_int16_t		dh_scontrol;
-	u_char			dh_body[0]; // XXX Non-ANSI
+	struct frame_control dh_fc;
+	u_int16_t dh_duration;
+	u_char dh_ra[ETHER_ADDR_LEN];
+	u_char dh_ta[ETHER_ADDR_LEN];
+	u_char dh_3a[ETHER_ADDR_LEN];
+	u_int16_t dh_scontrol;
+	u_char dh_body[0]; // XXX Non-ANSI
 };
 
 
@@ -135,7 +135,7 @@ public:
 	PHY_MIB(Mac802_11 *parent);
 
 	inline u_int32_t getCWMin() { return(CWMin); }
-        inline u_int32_t getCWMax() { return(CWMax); }
+    inline u_int32_t getCWMax() { return(CWMax); }
 	inline double getSlotTime() { return(SlotTime); }
 	inline double getSIFS() { return(SIFSTime); }
 	inline double getPIFS() { return(SIFSTime + SlotTime); }
@@ -344,9 +344,11 @@ private:
 		}
 	}
 
-protected:
+public:
 	PHY_MIB         phymib_;
-        MAC_MIB         macmib_;
+    MAC_MIB         macmib_;
+protected:
+
 
        /* the macaddr of my AP in BSS mode; for IBSS mode
         * this is set to a reserved value IBSS_ID - the
