@@ -4,6 +4,7 @@ LMP set debug_ 0
 Mac/BNEP set debug_ 0
 SDP set debug_ 0
 A2MP set debug_ 0
+PAL/802_11 set debug_ 0 
 BTChannel set debug_ 0
 
 Baseband set T_w_inquiry_scan_ 0
@@ -104,6 +105,8 @@ Node/BTNode set X_ 0
 Node/BTNode set Y_ 0
 Node/BTNode set Z_ 0
 
+A2MP set ampNumber_ 0
+
 Node/BTNode instproc init args {
         $self instvar mac_ bnep_ sdp_ a2mp_ l2cap_ lmp_ bb_ phy_ ll_ \
 		arptable_ classifier_ dmux_ entry_ ragent_ 
@@ -175,19 +178,25 @@ Node/BTNode instproc init args {
 #set val(palType) PAL/802_11
 #set topo       [new Topography]
 #set chan [new $val(chan)];#Create wireless channel
-#FIXME : set a2mp [$node set am2p_]
-#FIXME : $a2mp add-PAL $val(palType)$topo $chan $val(prop)
+#FIXME : set a2mp [$node set a2mp_]
+#FIXME : $a2mp add-PAL $val(palType) $topo $chan $val(prop)
 		
-A2MP instproc add-PAL {palType topo channel pmodel} {
+Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 	if {$palType == "PAL/802_11"} {
-		$self instvar btnode_ l2cap_ ampNumber_ pal_
+
+		set a2mp_ [$self set a2mp_]
+		set ampNumber_ [$a2mp_ set ampNumber_]
+		set l2cap_ [$self set l2cap_]
+		
+		
 		set ns [Simulator instance]
 		set imepflag [$ns imep-support]
 		set t $ampNumber_
 		incr ampNumber_
 		
-		set pal_($t)	[new $palType]
 		
+		set pal_($t)	[new $palType]
+		set prop	[new $pmodel]
 		set netif	[new Phy/WirelessPhy]		;# interface
 		set mac		[new Mac/802_11]		;# mac layer
         	set ant		[new Antenna/OmniAntenna]
@@ -250,9 +259,12 @@ A2MP instproc add-PAL {palType topo channel pmodel} {
 		#
 		# PAL Layer
 		#
-		$pal_($t) up-target $l2cap_
-		$pal_($t) down-target $mac
-	
+		#$pal_($t) up-target $l2cap_
+		#$pal_($t) down-target $mac
+		$pal_($t) l2cap $l2cap_
+		$pal_($t) mac $mac
+		$pal_($t) btnode $self
+		$pal_($t) a2mp $a2mp_
 	
 		#
 		# Interface Queue
@@ -330,9 +342,9 @@ A2MP instproc add-PAL {palType topo channel pmodel} {
 			$fec up-target $mac
 		}
 	
-		$netif propagation $pmodel	;# Propagation Model
+		$netif propagation $prop	;# Propagation Model
 		#$netif node $pal_($t)		;#Test: add the interface to the 802_11PAL which extends mobilenode Bind PAL <---> interface
-		$netif node $btnode_		;# Bind node <---> interface (checked (mac/wirelessphy.cc): OK)
+		$netif node $self		;# Bind node <---> interface (checked (mac/wirelessphy.cc): OK)
 		$netif antenna $ant
 		#
 		# Physical Channel
@@ -342,68 +354,68 @@ A2MP instproc add-PAL {palType topo channel pmodel} {
 	        # List-based improvement
 		# For nodes talking to multiple channels this should
 		# be called multiple times for each channel
-		$channel add-node $btnode_	;#FIXED need testing : (mac/channel.cc)could lead to a problem as it deals 
+		$channel add-node $self	;#FIXED need testing : (mac/channel.cc)could lead to a problem as it deals 
 						;#with mobile nodes WirelessChannel::addNodeToList(MobileNode *mn)	
 	
 		# let topo keep handle of channel
 		$topo channel $channel
 		# ============================================================
 	
-		if { [Simulator set MacTrace_] == "ON" } {
-			#
-			# Trace RTS/CTS/ACK Packets
-			#
-			if {$imepflag != ""} {
-				set rcvT [$btnode_ mobility-trace Recv "MAC"]
-			} else {
-				set rcvT [cmu-trace Recv "MAC" $btnode_]
-			}
-			$mac log-target $rcvT
-			if { $namfp != "" } {
-				$rcvT namattach $namfp
-			}
-			#
-			# Trace Sent Packets
-			#
-			if {$imepflag != ""} {
-				set sndT [$btnode_ mobility-trace Send "MAC"]
-			} else {
-				set sndT [cmu-trace Send "MAC" $btnode_]
-			}
-			$sndT target [$mac down-target]
-			$mac down-target $sndT
-			if { $namfp != "" } {
-				$sndT namattach $namfp
-			}
-			#
-			# Trace Received Packets
-			#
-			if {$imepflag != ""} {
-				set rcvT [$btnode_ mobility-trace Recv "MAC"]
-			} else {
-				set rcvT [cmu-trace Recv "MAC" $btnode_]
-			}
-			$rcvT target [$mac up-target]
-			$mac up-target $rcvT
-			if { $namfp != "" } {
-				$rcvT namattach $namfp
-			}
-			#
-			# Trace Dropped Packets
-			#
-			if {$imepflag != ""} {
-				set drpT [$btnode_ mobility-trace Drop "MAC"]
-			} else {
-				set drpT [cmu-trace Drop "MAC" $btnode_]
-			}
-			$mac drop-target $drpT
-			if { $namfp != "" } {
-				$drpT namattach $namfp
-			}
-		} else {
-			$mac log-target [$ns set nullAgent_]
-			$mac drop-target [$ns set nullAgent_]
-		}
+#		if { [Simulator set MacTrace_] == "ON" } {
+#			#
+#			# Trace RTS/CTS/ACK Packets
+#			#
+#			if {$imepflag != ""} {
+#				set rcvT [$self mobility-trace Recv "MAC"]
+#			} else {
+#				set rcvT [cmu-trace Recv "MAC" $self]
+#			}
+#			$mac log-target $rcvT
+#			if { $namfp != "" } {
+#				$rcvT namattach $namfp
+#			}
+#			#
+#			# Trace Sent Packets
+#			#
+#			if {$imepflag != ""} {
+#				set sndT [$self mobility-trace Send "MAC"]
+#			} else {
+#				set sndT [cmu-trace Send "MAC" $self]
+#			}
+#			$sndT target [$mac down-target]
+#			$mac down-target $sndT
+#			if { $namfp != "" } {
+#				$sndT namattach $namfp
+#			}
+#			#
+#			# Trace Received Packets
+#			#
+#			if {$imepflag != ""} {
+#				set rcvT [$self mobility-trace Recv "MAC"]
+#			} else {
+#				set rcvT [cmu-trace Recv "MAC" $self]
+#			}
+#			$rcvT target [$mac up-target]
+#			$mac up-target $rcvT
+#			if { $namfp != "" } {
+#				$rcvT namattach $namfp
+#			}
+#			#
+#			# Trace Dropped Packets
+#			#
+#			if {$imepflag != ""} {
+#				set drpT [$self mobility-trace Drop "MAC"]
+#			} else {
+#				set drpT [cmu-trace Drop "MAC" $self]
+#			}
+#			$mac drop-target $drpT
+#			if { $namfp != "" } {
+#				$drpT namattach $namfp
+#			}
+#		} else {
+#			$mac log-target [$ns set nullAgent_]
+#			$mac drop-target [$ns set nullAgent_]
+#		}
 	
 	# change wrt Mike's code
 	       if { [Simulator set EotTrace_] == "ON" } {
@@ -412,9 +424,9 @@ A2MP instproc add-PAL {palType topo channel pmodel} {
 	               #
 	
 	               if {$imepflag != ""} {
-	                       set eotT [$btnode_ mobility-trace EOT "MAC"]
+	                       set eotT [$self mobility-trace EOT "MAC"]
 	               } else {
-	                       set eoT [cmu-trace EOT "MAC" $btnode_]
+	                       set eoT [cmu-trace EOT "MAC" $self]
 	               }
 	               $mac eot-target $eotT
 	       }
@@ -424,13 +436,12 @@ A2MP instproc add-PAL {palType topo channel pmodel} {
 		# ============================================================
 		
 		#$pal_($t) addif $netif 	;#Test: add the interface to the 802_11PAL which extends mobilenode
-		$btnode_ addif $netif	;#FIXED and checked : add the wireless phy to the node (mobilenode.cc) now added to bt-node.cc
+		$self addif $netif	;#FIXED and checked : add the wireless phy to the node (mobilenode.cc) now added to bt-node.cc
 		
-		$pal_($t) setup [AddrParams addr2id $args] $mac $l2cap_ $self $btnode_
+		#$pal_($t) setup [AddrParams addr2id $args] $mac $l2cap_ $a2mp $self
+		$pal_($t) _init
 		
-	}
-	else
-	{
+	} else	{
 		error "Currently only these PAL values are supported (add-PAL): PAL/802_11"
 	}
 
