@@ -39,26 +39,63 @@
 //#include "lmp-link.h"
 //#include "rendpoint.h"
 //#include "bt-channel.h"
-//#include "mac.h"
+#include "bt-node.h"
+#include "l2cap.h"
+#include "amp-a2mp.h"
+#include "mac.h"
 
+struct Version_Info{
+	u_int8_t PAL_Version;
+	u_int16_t PAL_Sub_Version;
+	Version_Info(u_int8_t pal_version,u_int16_t pal_sub_version):PAL_Version(pal_version),PAL_Sub_Version(pal_sub_version){}
+};
 
-class PAL:public BiConnector {
+struct AMP_Info{
+	u_int32_t Total_Bandwidth;
+	u_int32_t Max_Guaranteed_Bandwidth;
+	u_int32_t Min_Latency;
+	u_int32_t Max_PDU_Size;
+	u_int8_t  Controller_Type;
+	u_int16_t PAL_Capabilities;
+	u_int16_t AMP_Assoc_Length;
+	u_int32_t Max_Flush_Timeout;
+	u_int32_t Best_Effort_Flush_Timeout;
+	AMP_Info(u_int32_t total_Bandwidth,u_int32_t max_Guaranteed_Bandwidth,u_int32_t min_Latency,u_int32_t max_PDU_Size,u_int8_t  controller_Type,u_int16_t pal_Capabilities,u_int16_t amp_Assoc_Length,u_int32_t max_Flush_Timeout,u_int32_t best_Effort_Flush_Timeout){
+		Total_Bandwidth=total_Bandwidth;
+		Max_Guaranteed_Bandwidth=max_Guaranteed_Bandwidth;
+		Min_Latency=min_Latency;
+		Max_PDU_Size=max_PDU_Size;
+		Controller_Type=controller_Type;
+		PAL_Capabilities=pal_Capabilities;
+		AMP_Assoc_Length=amp_Assoc_Length;
+		Max_Flush_Timeout=max_Flush_Timeout;
+		Best_Effort_Flush_Timeout=best_Effort_Flush_Timeout;
+	}
+};
+
+class PAL:public BiConnector{
     friend class BTNode;
 
-  protected:
+public:
+  BTNode * btnode_;
+  L2CAP * l2cap_;
+  A2MP *a2mp_;
+  Mac * mac_;
+  //Bd_info *_my_info;	//fixme : what to do with it??
+  //Bd_info *_bd;		// bt device database //fixme : what to do with it??
+  //bd_addr_t ad; //use mac.addr() instead
+
+
+protected:
 	//send packet to the L2CAP
-    void sendUp(Packet *, Handler *);
+    virtual void sendUp(Packet *, Handler *)=0;
+    virtual int command(int argc, const char*const* argv)=0;
+public:
 
-  public:
 
-    A2MP *a2mp_;
-    Bd_info *_my_info;	//fixme : what to do with it??
-    Bd_info *_bd;		// bt device database //fixme : what to do with it??
-    bd_addr_t ad;
-
-    virtual void setup(bd_addr_t ad,A2MP * a2mp) = 0 ;//fixme : see if they can be written once for all PALs
     virtual void on()  = 0;//fixme : see if they can be written once for all PALs
     virtual void _init() = 0;//fixme : see if they can be written once for all PALs
+
     ////////////////////////////////////
     //          HCI Interface         //
     ////////////////////////////////////
@@ -67,15 +104,15 @@ class PAL:public BiConnector {
 
     //PAL Manager functions
     //implements global operations includes responding to host requests for AMP info and performing PAL reset
-    virtual uchar* HCI_Read_Local_Version_Info()= 0;
-    virtual uchar* HCI_Read_Local_AMP_Info()= 0;
+    virtual Version_Info* HCI_Read_Local_Version_Info()= 0;
+    virtual AMP_Info* HCI_Read_Local_AMP_Info()= 0;
     virtual void HCI_Reset()= 0;
     virtual int HCI_Read_Failed_Contact_Counter(/*logical link*/)= 0;
-    virtual uchar HCI_Read_Link_Quality()= 0;
-    virtual int HCI_Read_RSSI()= 0;
+    virtual u_int8_t HCI_Read_Link_Quality()= 0;
+    virtual u_int8_t HCI_Read_RSSI()= 0;
     virtual void HCI_Short_Range_mode()= 0;
-    virtual void HCI_Write_Best_Effort_Flush_Timeout(uchar)= 0;
-    virtual uchar HCI_Read_Best_Effort_Flush_Timeout()= 0;
+    virtual void HCI_Write_Best_Effort_Flush_Timeout(u_int8_t)= 0;
+    virtual u_int8_t HCI_Read_Best_Effort_Flush_Timeout()= 0;
 
     //Events
     virtual void Physical_link_Loss_Early_Warning()= 0;
