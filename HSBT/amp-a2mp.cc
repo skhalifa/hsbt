@@ -50,7 +50,7 @@ static class A2MPclass:public TclClass {
   public:
     A2MPclass():TclClass("A2MP") {}
     TclObject *create(int, const char *const *) {
-	return (new A2MP());
+    	return (new A2MP());
     }
 } class_a2mp_agent;
 
@@ -68,8 +68,10 @@ A2MP::A2MP()
 inqTShred_(60), inInquiry_(0), conn_(0), numConn_(0), connNumShred_(1),
 nbr_(0), numNbr_(0), identifier_(0), controllerId_(0x01), q_(),ampNumber_(0)
 {
-    //bind("randomizeSlotOffset_", &randomizeSlotOffset_);
-    //bind("enable_clkdrfit_in_rp_", &enable_clkdrfit_in_rp_);
+	bind("ampNumber_",&ampNumber_);
+
+	printf("*** A2MP constructor.\n");
+	printf("%i\n",ampNumber_);
 }
 
 void A2MP::inq_complete()
@@ -146,6 +148,24 @@ void A2MP::channel_setup_complete(L2CAPChannel * ch)
     c->send();
 }
 
+A2MP::Connection *A2MP::connect(BTNode* dest,int palIndex){
+	//todo: Still under testing
+//    Connection *c;
+//    if ((c = lookupConnection(addr))) {
+//	return c;
+//    }
+//
+//    L2CAPChannel *ch = l2cap_->L2CA_ConnectReq(addr, PSM_A2MP);
+//
+//    c = addConnection(ch);
+//    if (ch->ready_) {
+//	c->ready_ = 1;
+//    }
+//
+//    return c;
+	return NULL;
+}
+
 A2MP::Connection * A2MP::connect(bd_addr_t addr)
 {
 	//todo: Still under testing
@@ -163,6 +183,9 @@ A2MP::Connection * A2MP::connect(bd_addr_t addr)
 
     return c;
 }
+void A2MP::disconnect(BTNode* dest,int palIndex){
+	//TODO:not implemented yet
+}
 
 void A2MP::setup(bd_addr_t ad, LMP * l, L2CAP * l2, BTNode * node)
 {
@@ -170,6 +193,7 @@ void A2MP::setup(bd_addr_t ad, LMP * l, L2CAP * l2, BTNode * node)
     l2cap_ = l2;
     lmp_ = l;
     btnode_ = node;
+    printf("*** A2MP setup with address %i.\n",bd_addr_);
 }
 
 int A2MP::command(int argc, const char *const *argv)
