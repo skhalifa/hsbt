@@ -144,7 +144,10 @@ class A2MPInqCallback:public Handler {
     A2MP * a2mp_;
 };
 
+class PAL;
 class A2MP:public Connector {
+
+
   public:
     class Connection {
       public:
@@ -174,6 +177,8 @@ class A2MP:public Connector {
     int command(int argc, const char *const *argv);
 
     Connection *connect(bd_addr_t addr);
+    Connection *connect(BTNode* dest,int palIndex);
+    void disconnect(BTNode* dest,int palIndex);
     void channel_setup_complete(L2CAPChannel * ch);
     Connection *addConnection(L2CAPChannel * ch);
     void removeConnection(A2MP::Connection * c);
@@ -200,33 +205,34 @@ class A2MP:public Connector {
     void A2MP_DisconnectPhysicalLinkReq(uchar *, int);
     void A2MP_DisconnectPhysicalLinkRsp(Packet *, L2CAPChannel *);
 
+  public:
+      bd_addr_t bd_addr_;
+      L2CAP *l2cap_;
+      LMP *lmp_;
+      BTNode *btnode_;
 
-    bd_addr_t bd_addr_;
-    L2CAP *l2cap_;
-    LMP *lmp_;
-    BTNode *btnode_;
+      int packetType_;
+      A2MPTimer timer_;
+      A2MPInqCallback inqCallback_;
+      Event ev_;
+      double lastInqT_;
+      double inqTShred_;
+      int inInquiry_;
 
-    int packetType_;
-    A2MPTimer timer_;
-    A2MPInqCallback inqCallback_;
-    Event ev_;
-    double lastInqT_;
-    double inqTShred_;
-    int inInquiry_;
+      Connection *conn_;
+      int numConn_;
+      int connNumShred_;
+      Bd_info *nbr_;
+      int numNbr_;
 
-    Connection *conn_;
-    int numConn_;
-    int connNumShred_;
-    Bd_info *nbr_;
-    int numNbr_;
+      int identifier_;
+      uchar controllerId_;
+      PacketQueue q_;
 
-    int identifier_;
-    uchar controllerId_;
-    PacketQueue q_;
+      //Alternative mac/phy info
+      int ampNumber_;
+      PAL *pal_[MAX_AMP_NUMBER];
 
-    //Alternative mac/phy info
-    int ampNumber_;
-    PAL *pal_[MAX_AMP_NUMBER];
 
 };
 
