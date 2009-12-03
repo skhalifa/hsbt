@@ -80,12 +80,14 @@ void PAL802_11::on(){
 
 }
 void PAL802_11::_init(){
-	a2mp_->pal_[a2mp_->ampNumber_-1] = this;
+
 	Max_Guaranteed_Bandwidth_ = ((Mac802_11*)mac_)->bandwidth();//Fixme: the guaranteed bandwidth should equals total bandwidth - used bandwidth
 	Min_Latencay_ = ((Mac802_11*)mac_)->phymib_.getDIFS()+((Mac802_11*)mac_)->phymib_.getCWMin();
 	Max_PDU_Size_ = Max80211PALPDUSize;
 	AMP_ASSOC_Length_ = Max80211AMPASSOCLen;
-	printf("*** PAL 802.11 _init.\n");
+	controllerID_ = Controller_ID_;
+	controllerType_ = Controller_Type_;
+	controllerStatus_ = RadioHasHighCapacityLeft;
 }
 
 void PAL802_11::sendUp(Packet *p, Handler *h){
