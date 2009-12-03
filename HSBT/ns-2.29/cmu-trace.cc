@@ -368,6 +368,9 @@ void CMUTrace::format_sdp(Packet *p, int offset)
 {
 }
 
+void CMUTrace::format_a2mp(Packet *p, int offset)
+{
+}
 void CMUTrace::format_bt(Packet *p, int offset)
 {
 	struct hdr_bt *bh = HDR_BT(p);
@@ -1199,6 +1202,9 @@ void CMUTrace::format(Packet* p, const char *why)
 		break;
 	case PT_SDP:
 		format_sdp(p, offset);
+		break;
+	case PT_A2MP:
+		format_a2mp(p, offset);
 		break;
 	case PT_ARP:
 		format_arp(p, offset);
