@@ -142,7 +142,7 @@ class WNode:public Node {
     virtual void setdest(double destx, double desty, double destz, 
 		         double speed) {}
 
-    double X() { fprintf(stdout, "x Wnode\n");return X_; }
+    double X() { return X_; }
     double Y() { return Y_; }
     double Z() { return Z_; }
     inline double speed() { return speed_; }
