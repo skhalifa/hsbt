@@ -82,14 +82,14 @@ Packet Format
 #define A2MP_DisconnectPhysicalLinkRequest	0x0C
 #define A2MP_DisconnectPhysicalLinkResponse	0x0D
 
-
+//==================
+//Controller IDs
+//==================
+#define BR_EDR_ID 0x00
 //==================
 //Controller Types
 //==================
 #define BR_EDR	0x00
-#define WIFI	0x01
-#define UWB		0x02
-
 //==================
 //Controller Status
 //==================
@@ -100,6 +100,54 @@ Packet Format
 #define RadioHasMediumCapacityLeft		0x04 //used when radio is powered up to indicate that the from 30% to 70% of bandwidth is available to be used by bluetooth
 #define RadioHasHighCapacityLeft		0x05 //used when radio is powered up to indicate that the from 70% to 100% of bandwidth is available to be used by bluetooth
 #define RadioHasFullCapacityLeft		0x06 //used when radio is powered up to indicate that the full bandwidth is available to be used by bluetooth
+
+//==================
+//Controller List
+//==================
+struct Controller_Info{
+	u_int8_t controller_ID_;
+	u_int8_t controller_Type__;
+	u_int8_t controller_Status_;
+	Controller_Info(u_int8_t controller_ID,u_int8_t controller_Type,u_int8_t controller_Status):controller_ID_(controller_ID),controller_Type__(controller_Type),controller_Status_(controller_Status){}
+	Controller_Info(){}
+};
+
+//==================
+//Packets
+//==================
+struct Discovry_Req{
+	u_int16_t MTU_MPS_; // default >= 0x029E
+	u_int16_t Ext_Feature_Mask_; //default 0x0000
+	Discovry_Req(u_int16_t MTU_MPS,u_int16_t Ext_Feature_Mask):MTU_MPS_(MTU_MPS),Ext_Feature_Mask_(Ext_Feature_Mask){}
+};
+
+struct Discovry_Rsp{
+	u_int16_t MTU_MPS_; // default >= 0x029E
+	u_int16_t Ext_Feature_Mask_; //default 0x0000
+	Controller_Info* controller_Info_;//one or more the first must be the BR/EDR controller
+	int AMP_Count_;
+	Discovry_Rsp(u_int16_t MTU_MPS,u_int16_t Ext_Feature_Mask,Controller_Info* controller_Info,int AMP_Count):MTU_MPS_(MTU_MPS),Ext_Feature_Mask_(Ext_Feature_Mask),controller_Info_(controller_Info),AMP_Count_(AMP_Count){}
+};
+
+struct Info_Rsp{
+	u_int8_t controllerID_;
+	u_int8_t status_;//status of request 0x00 success and 0x01 invalid controller ID
+	u_int32_t totalBandwidth_;//Total data rate in kbps that the controller can achieve
+	u_int32_t maxGaranteedBandwidth_;//Max data rate in kbps that the controller can achieve. requests above this value is rejected
+	u_int32_t minLatency_;//min latency in micro seconds
+	u_int16_t PAL_Capabilities_;//return from  HCI_Get_Local_AMP_Info_command
+	u_int16_t AMP_AssocStructureSize_;//max size in octets of the requested AMP's AMP Assoc structure (HCI_Get_Local_AMP_Info_command)
+	Info_Rsp(u_int8_t controllerID,	u_int8_t status,u_int32_t totalBandwidth,u_int32_t maxGaranteedBandwidth,u_int32_t minLatency,u_int16_t PAL_Capabilities,u_int16_t AMP_AssocStructureSize){
+		controllerID_=controllerID;
+		status_=status;
+		totalBandwidth_=totalBandwidth;
+		maxGaranteedBandwidth_=maxGaranteedBandwidth;
+		minLatency_=minLatency;
+		PAL_Capabilities_=PAL_Capabilities;
+		AMP_AssocStructureSize_=AMP_AssocStructureSize;
+	}
+	Info_Rsp(){}
+};
 
 struct hdr_a2mp {
     uchar code_;		// defined above
@@ -154,12 +202,21 @@ class A2MP:public Connector {
 	class A2MP * a2mp_;
 	Connection *next_;
 	L2CAPChannel *cid_;
-	int daddr_;
+	int daddr_;//destination address
 	int ready_;
+	int dAMP_Count_;//destination PAL count
+	Controller_Info *dci_; //destination PAL(s) info
+	Info_Rsp* dPAL_Info_;
+	int infoReqSent_;
+	int infoRspRecv_;
+	bool discoveryOnly_;
 	PacketQueue q_;
 
 	Connection(A2MP * a2mp, L2CAPChannel * c = 0)
-	 : a2mp_(a2mp), next_(0), cid_(c), daddr_(-1), ready_(0), q_() {}
+	 : a2mp_(a2mp), next_(0), cid_(c), daddr_(c->_bd_addr), ready_(0),dAMP_Count_(0),infoReqSent_(0),infoRspRecv_(0),discoveryOnly_(false), q_() {
+		dci_ = new Controller_Info();
+		dPAL_Info_ = NULL;
+	}
 
 	void send() {
 	    Packet *p;
@@ -177,28 +234,27 @@ class A2MP:public Connector {
     int command(int argc, const char *const *argv);
 
     Connection *connect(bd_addr_t addr);
-    Connection *connect(BTNode* dest,int palIndex);
-    void disconnect(BTNode* dest,int palIndex);
     void channel_setup_complete(L2CAPChannel * ch);
     Connection *addConnection(L2CAPChannel * ch);
     void removeConnection(A2MP::Connection * c);
     Connection *lookupConnection(bd_addr_t addr);
-    Connection *lookupConnection(L2CAPChannel * ch);
+
 
     void inq_complete();
     Packet *gen_a2mp_pkt(uchar *, int);
     void inquiry();
     void inqAndSend(Packet *);
 
+    void findMatchingControllers(A2MP::Connection * c);
 
     void A2MP_CommandRej(Packet *, L2CAPChannel *);
-    void A2MP_DiscoverReq();
+    void A2MP_DiscoverReq(bd_addr_t);
     void A2MP_DiscoverRsp(Packet *, L2CAPChannel *);
     void A2MP_ChangeNtfy(uchar *, int);
     void A2MP_ChangeRsp(Packet *, L2CAPChannel *);
-    void A2MP_GetInfoReq(L2CAPChannel *,uchar *, int);
+    void A2MP_GetInfoReq(L2CAPChannel *,u_int8_t );
     void A2MP_GetInfoRsp(Packet *, L2CAPChannel *);
-    void A2MP_Get_AMP_AssocReq(L2CAPChannel *,uchar *, int);
+    void A2MP_Get_AMP_AssocReq(L2CAPChannel *,u_int8_t);
     void A2MP_Get_AMP_AssocRsp(Packet *, L2CAPChannel *);
     void A2MP_CreatePhysicalLinkReq(L2CAPChannel *,uchar *, int);
     void A2MP_CreatePhysicalLinkRsp(Packet *, L2CAPChannel *);
