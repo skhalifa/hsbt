@@ -178,24 +178,20 @@ Node/BTNode instproc init args {
 #set val(palType) PAL/802_11
 #set topo       [new Topography]
 #set chan [new $val(chan)];#Create wireless channel
-#FIXME : set a2mp [$node set a2mp_]
-#FIXME : $a2mp add-PAL $val(palType) $topo $chan $val(prop)
+#$node add-PAL $val(palType) $topo $chan $val(prop)
 		
 Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 	if {$palType == "PAL/802_11"} {
 
 		set a2mp_ [$self set a2mp_]
-		set ampNumber_ [$a2mp_ set ampNumber_]
 		set l2cap_ [$self set l2cap_]
 		
 		
 		set ns [Simulator instance]
 		set imepflag [$ns imep-support]
-		set t $ampNumber_
-		incr ampNumber_
 		
 		
-		set pal_($t)	[new $palType]
+		set pal_	[new $palType]
 		set prop	[new $pmodel]
 		set netif	[new Phy/WirelessPhy]		;# interface
 		set mac		[new Mac/802_11]		;# mac layer
@@ -257,14 +253,19 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 		
 		
 		#
+		# A2MP Layer
+		#
+		$a2mp_ add-pal $pal_
+		
+		#
 		# PAL Layer
 		#
 		#$pal_($t) up-target $l2cap_
 		#$pal_($t) down-target $mac
-		$pal_($t) l2cap $l2cap_
-		$pal_($t) mac $mac
-		$pal_($t) btnode $self
-		$pal_($t) a2mp $a2mp_
+		$pal_ l2cap $l2cap_
+		$pal_ mac $mac
+		$pal_ btnode $self
+		$pal_ a2mp $a2mp_
 	
 		#
 		# Interface Queue
@@ -293,7 +294,7 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 		#
 		# Mac Layer
 		#
-		$mac up-target $pal_($t)
+		$mac up-target $pal_
 		$mac netif $netif
 		
 	
@@ -343,7 +344,7 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 		}
 	
 		$netif propagation $prop	;# Propagation Model
-		#$netif node $pal_($t)		;#Test: add the interface to the 802_11PAL which extends mobilenode Bind PAL <---> interface
+		#$netif node $pal_		;#Test: add the interface to the 802_11PAL which extends mobilenode Bind PAL <---> interface
 		$netif node $self		;# Bind node <---> interface (checked (mac/wirelessphy.cc): OK)
 		$netif antenna $ant
 		#
@@ -435,11 +436,11 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 	
 		# ============================================================
 		
-		#$pal_($t) addif $netif 	;#Test: add the interface to the 802_11PAL which extends mobilenode
+		#$pal_ addif $netif 	;#Test: add the interface to the 802_11PAL which extends mobilenode
 		$self addif $netif	;#FIXED and checked : add the wireless phy to the node (mobilenode.cc) now added to bt-node.cc
 		
-		#$pal_($t) setup [AddrParams addr2id $args] $mac $l2cap_ $a2mp $self
-		$pal_($t) _init
+		#$pal_ setup [AddrParams addr2id $args] $mac $l2cap_ $a2mp $self
+		$pal_ _init
 		
 	} else	{
 		error "Currently only these PAL values are supported (add-PAL): PAL/802_11"
