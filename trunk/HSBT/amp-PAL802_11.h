@@ -42,6 +42,7 @@
 	#define PAL_Version_ 0x01//TODO:get from Bluetooth assigned numbers
 	#define PAL_Sub_version_ 0x0001//vendor specified
 	#define Total_Bandwidth_ 30000//for now assign 30Mbps //Bandwidth unit is Kbps (4octets)
+	#define Controller_ID_ 0x01//802.11 AMP
 	#define Controller_Type_ 0x01//802.11 AMP
 	#define palCapabilities_ 0x0000//Guaranteed service type is not supported by this PAL(2octets)
 	#define Max_Flush_Timeout_ 0xFFFFFFFF//Max time period in microseconds AMP device attempt to transmit a frame on a guaranteed link (currently set to infinity)
