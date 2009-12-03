@@ -128,6 +128,7 @@ protected:
 	void	format_ip(Packet *p, int offset);
 
 	void    format_sdp(Packet *p, int offset);
+	void    format_a2mp(Packet *p, int offset);
 	void	format_arp(Packet *p, int offset);
 	void    format_hdlc(Packet *p, int offset);
 	void	format_dsr(Packet *p, int offset);
