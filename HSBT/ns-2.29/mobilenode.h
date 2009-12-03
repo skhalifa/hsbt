@@ -142,7 +142,7 @@ public:
 	void dump(void);
 
 	inline MobileNode*& next() { return next_; }
-	inline double X() { fprintf(stdout, "x Mobilenode\n");return X_; }
+	inline double X() { return X_; }
 	inline double Y() { return Y_; }
 	inline double Z() { return Z_; }
 	inline double speed() { return speed_; }
