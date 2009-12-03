@@ -241,17 +241,7 @@ int BTNode::command(int argc, const char * const *argv) {
 		return (TCL_OK);
 
 	} else if (argc == 2) {
-		if (!strcmp(argv[1], "make-hs-connection")) {
-			BTNode *dest = (BTNode *) TclObject::lookup(argv[2]);
-			A2MP::Connection* conn = a2mp_->connect(dest,atoi(argv[3]));
-			//tcl.result(conn->cid->_queue->name());//FIXME : what is that for???
-			return (TCL_OK);
-
-		} else if (!strcmp(argv[1], "drop-hs-connection")) {
-			BTNode *dest = (BTNode *) TclObject::lookup(argv[2]);
-			a2mp_->disconnect(dest, atoi(argv[3]));
-			return (TCL_OK);
-		} else if (!strcmp(argv[1], "cancel-inquiry-scan")) {
+		if (!strcmp(argv[1], "cancel-inquiry-scan")) {
 			bb_->inquiryScan_cancel();
 			return TCL_OK;
 
@@ -318,7 +308,20 @@ int BTNode::command(int argc, const char * const *argv) {
 
 	} else if (argc == 3) {
 
-		if (!strcasecmp(argv[1], "LossMod")) {
+		if (!strcmp(argv[1], "make-hs-connection")) {
+			BTNode *dest = (BTNode *) TclObject::lookup(argv[2]);
+			printf("sending req to %i\n",dest->bb_->bd_addr_);
+			a2mp_->A2MP_DiscoverReq(dest->bb_->bd_addr_);
+			A2MP::Connection* c = a2mp_->lookupConnection(dest->bb_->bd_addr_);
+			c->discoveryOnly_ = false;
+			//tcl.result(conn->cid->_queue->name());
+			return (TCL_OK);
+
+		} else if (!strcmp(argv[1], "drop-hs-connection")) {
+			BTNode *dest = (BTNode *) TclObject::lookup(argv[2]);
+//			a2mp_->disconnect(dest, atoi(argv[3]));
+			return (TCL_OK);
+		} else if (!strcasecmp(argv[1], "LossMod")) {
 			if (!strcasecmp(argv[2], "BlueHoc")) {
 				BTChannel::setLossMode(new LMBlueHoc());
 			} else if (!strcasecmp(argv[2], "CoChBlueHoc")) {
