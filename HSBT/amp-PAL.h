@@ -44,6 +44,30 @@
 #include "amp-a2mp.h"
 #include "mac.h"
 
+//==================
+//Controller IDs
+//==================
+#define WIFI_ID 0x01
+#define UWB_ID 0x02
+
+//==================
+//Controller Types
+//==================
+#define WIFI	0x01
+#define UWB		0x02
+
+//==================
+//Controller Status
+//==================
+#define RadioAvailableButPoweredDown	0x00 // radio need to be powered up to use
+#define RadioNotShared					0x01 //used when radio is powered up to indicate that the radio is only used by bluetooth
+#define RadioHasNoCapacityLeft			0x02 //used when radio is powered up to indicate that the no bandwidth available to be used by bluetooth
+#define RadioHasLowCapacityLeft			0x03 //used when radio is powered up to indicate that the from 0% to 30% of bandwidth is available to be used by bluetooth
+#define RadioHasMediumCapacityLeft		0x04 //used when radio is powered up to indicate that the from 30% to 70% of bandwidth is available to be used by bluetooth
+#define RadioHasHighCapacityLeft		0x05 //used when radio is powered up to indicate that the from 70% to 100% of bandwidth is available to be used by bluetooth
+#define RadioHasFullCapacityLeft		0x06 //used when radio is powered up to indicate that the full bandwidth is available to be used by bluetooth
+
+
 struct Version_Info{
 	u_int8_t PAL_Version;
 	u_int16_t PAL_Sub_Version;
@@ -81,6 +105,9 @@ public:
   L2CAP * l2cap_;
   A2MP *a2mp_;
   Mac * mac_;
+  u_int8_t controllerID_;
+  u_int8_t controllerType_;
+  u_int8_t controllerStatus_;
   //Bd_info *_my_info;	//fixme : what to do with it??
   //Bd_info *_bd;		// bt device database //fixme : what to do with it??
   //bd_addr_t ad; //use mac.addr() instead
