@@ -197,6 +197,21 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 		set mac		[new Mac/802_11]		;# mac layer
         	set ant		[new Antenna/OmniAntenna]
 		
+		$ant set Gt_ 1 ;#//Transmit antenna gain
+		$ant set Gr_ 1 ;#//Receive antenna gain
+		$netif set L_ 1.0 ;#//System Loss Factor
+		$netif set freq_ 2.462e9 ;#//channel-11. 2.463GHz
+		$netif set bandwidth_ 20Mb ;#//Data Rate
+		$netif set Pt_ 0.031622777 ;#//Transmit Power
+		$netif set CPThresh_ 10.0 ;#//Collision Threshold
+		$netif set CSThresh_ 5.011872e-12 ;#//Carrier Sense Power
+		$netif set RXThresh_ 5.82587e-09 ;#//Receive Power Threshold; calculated under TwoRayGround model by tools from NS2.
+		$mac set RTSThreshold_ 3000 ;#send RTS for packets larger than 3000 byte (disable RTS)
+		$mac set ShortRetryLimit_       7               ;# retransmittions
+		$mac set LongRetryLimit_        4               ;# retransmissions
+		$mac set PreambleLength_        72             ;# 72 bit
+		$mac set dataRate_ 20Mb
+		
 		
 		set namfp [$ns get-nam-traceall]
 		
@@ -266,6 +281,7 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 		$pal_ mac $mac
 		$pal_ btnode $self
 		$pal_ a2mp $a2mp_
+		$pal_ netif $netif
 	
 		#
 		# Interface Queue
@@ -294,6 +310,8 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 		#
 		# Mac Layer
 		#
+
+		
 		$mac up-target $pal_
 		$mac netif $netif
 		
@@ -327,7 +345,8 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 	        #		$netif up-target $fec
 		#	$fec up-target $mac
 		#}
-	
+		
+
 		$netif channel $channel
 		if {$inerr == "" && $fec == ""} {
 			$netif up-target $mac
@@ -347,6 +366,7 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 		#$netif node $pal_		;#Test: add the interface to the 802_11PAL which extends mobilenode Bind PAL <---> interface
 		$netif node $self		;# Bind node <---> interface (checked (mac/wirelessphy.cc): OK)
 		$netif antenna $ant
+		$netif NodeOff
 		#
 		# Physical Channel
 		#
