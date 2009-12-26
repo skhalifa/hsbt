@@ -241,7 +241,7 @@ public:
 	inline int	hdr_dst(char* hdr, int dst = -2);
 	inline int	hdr_src(char* hdr, int src = -2);
 	inline int	hdr_type(char* hdr, u_int16_t type = 0);
-	
+	inline int	is_idle(void);
 	inline int bss_id() { return bss_id_; }
 	
 	// Added by Sushmita to support event tracing
@@ -293,7 +293,7 @@ private:
 	void		rx_resume(void);
 	void		tx_resume(void);
 
-	inline int	is_idle(void);
+
 
 	/*
 	 * Debugging Functions.
@@ -347,6 +347,7 @@ private:
 public:
 	PHY_MIB         phymib_;
     MAC_MIB         macmib_;
+    double		dataRate_;
 protected:
 
 
@@ -361,7 +362,7 @@ protected:
 
 private:
 	double		basicRate_;
- 	double		dataRate_;
+
 	
 	/*
 	 * Mac Timers
