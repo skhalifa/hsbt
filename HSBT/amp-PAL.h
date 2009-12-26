@@ -43,6 +43,7 @@
 #include "l2cap.h"
 #include "amp-a2mp.h"
 #include "mac.h"
+#include "wireless-phy.h"
 
 //==================
 //Controller IDs
@@ -70,8 +71,9 @@
 
 struct Version_Info{
 	u_int8_t PAL_Version;
+	u_int16_t PAL_Company_Identifier;
 	u_int16_t PAL_Sub_Version;
-	Version_Info(u_int8_t pal_version,u_int16_t pal_sub_version):PAL_Version(pal_version),PAL_Sub_Version(pal_sub_version){}
+	Version_Info(u_int8_t pal_version,u_int16_t pal_Company_Identifier,u_int16_t pal_sub_version):PAL_Version(pal_version),PAL_Company_Identifier(pal_Company_Identifier),PAL_Sub_Version(pal_sub_version){}
 };
 
 struct AMP_Info{
@@ -96,6 +98,10 @@ struct AMP_Info{
 		Best_Effort_Flush_Timeout=best_Effort_Flush_Timeout;
 	}
 };
+enum PhysLinkCompleteStatus{
+	NoError=0x00,
+	LimitedResources=0x0D
+};
 
 class PAL:public BiConnector{
     friend class BTNode;
@@ -105,13 +111,13 @@ public:
   L2CAP * l2cap_;
   A2MP *a2mp_;
   Mac * mac_;
+  WirelessPhy* netif_;
   u_int8_t controllerID_;
   u_int8_t controllerType_;
   u_int8_t controllerStatus_;
   //Bd_info *_my_info;	//fixme : what to do with it??
   //Bd_info *_bd;		// bt device database //fixme : what to do with it??
   //bd_addr_t ad; //use mac.addr() instead
-
 
 protected:
 	//send packet to the L2CAP
@@ -133,6 +139,8 @@ public:
     //implements global operations includes responding to host requests for AMP info and performing PAL reset
     virtual Version_Info* HCI_Read_Local_Version_Info()= 0;
     virtual AMP_Info* HCI_Read_Local_AMP_Info()= 0;
+    virtual u_int8_t* HCI_Read_Local_AMP_Assoc()= 0;
+    virtual Event* HCI_Write_Remote_AMP_Assoc(u_int8_t*)= 0;
     virtual void HCI_Reset()= 0;
     virtual int HCI_Read_Failed_Contact_Counter(/*logical link*/)= 0;
     virtual u_int8_t HCI_Read_Link_Quality()= 0;
@@ -150,7 +158,7 @@ public:
     //Physical Link Manager functions
     //Implements operations on physical link includes physical link creation/acceptance/deletion plus channel selection
     //, security establishment and maintenance
-    virtual void HCI_Create_Physical_Link()= 0;
+    virtual PhysLinkCompleteStatus HCI_Create_Physical_Link(u_int8_t*)= 0;
     virtual void HCI_Accept_Physical_Link()= 0;
     virtual void HCI_Disconnect_Physical_Link()= 0;
 
@@ -170,7 +178,7 @@ public:
     //Data Manager functions
     //Perform operations on data packets includes : transmit/receive/buffer management
     virtual void Encapsulate_Packet() =0;
-
+    virtual void recv(Packet*, Handler* callback = 0) = 0;
 
     //virtual uchar* HCI_Read_Local_AMP_Assoc()= 0;
     //virtual uchar* HCI_Write_Remote_AMP_Assoc()= 0;

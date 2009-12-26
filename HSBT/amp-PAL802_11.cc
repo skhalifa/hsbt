@@ -74,6 +74,10 @@ int PAL802_11::command(int argc, const char*const* argv)
 			a2mp_ = (A2MP*) TclObject::lookup(argv[2]);
 			return (TCL_OK);
 		}
+		if (strcmp(argv[1], "netif") == 0) {
+			netif_ = (WirelessPhy*) TclObject::lookup(argv[2]);
+			return (TCL_OK);
+		}
 	}
 }
 void PAL802_11::on(){
@@ -81,13 +85,16 @@ void PAL802_11::on(){
 }
 void PAL802_11::_init(){
 
-	Max_Guaranteed_Bandwidth_ = ((Mac802_11*)mac_)->bandwidth();//Fixme: the guaranteed bandwidth should equals total bandwidth - used bandwidth
+
+	Max_Guaranteed_Bandwidth_ = ((Mac802_11*)mac_)->dataRate_/1000;//Fixme: the guaranteed bandwidth should equals total bandwidth - used bandwidth
 	Min_Latencay_ = ((Mac802_11*)mac_)->phymib_.getDIFS()+((Mac802_11*)mac_)->phymib_.getCWMin();
 	Max_PDU_Size_ = Max80211PALPDUSize;
 	AMP_ASSOC_Length_ = Max80211AMPASSOCLen;
 	controllerID_ = Controller_ID_;
 	controllerType_ = Controller_Type_;
 	controllerStatus_ = RadioHasHighCapacityLeft;
+	physicalLinkState_ = Disconnected;
+	printf("PAL INIT BW = %i\n",Max_Guaranteed_Bandwidth_);
 }
 
 void PAL802_11::sendUp(Packet *p, Handler *h){
@@ -95,12 +102,30 @@ void PAL802_11::sendUp(Packet *p, Handler *h){
 }
 
 Version_Info* PAL802_11::HCI_Read_Local_Version_Info(){
-	return new Version_Info(PAL_Version_,PAL_Sub_version_);
+	return new Version_Info(PAL_Version_,PAL_Company_Identifier_,PAL_Sub_version_);
 }
 
 AMP_Info* PAL802_11::HCI_Read_Local_AMP_Info()
 {
+	printf("Later BW = %d\n",Max_Guaranteed_Bandwidth_);
 	return new AMP_Info(Total_Bandwidth_,Max_Guaranteed_Bandwidth_,Min_Latencay_,Max_PDU_Size_,Controller_Type_,palCapabilities_,AMP_ASSOC_Length_,Max_Flush_Timeout_,Best_Effort_Flush_Timeout_);
+}
+u_int8_t* PAL802_11::HCI_Read_Local_AMP_Assoc()
+{
+	ASSOC802_11** assoc = new ASSOC802_11*[5];
+	assoc[0] = new ASSOC802_11(assoc[0]->MAC_Address,0x0006,(u_int8_t*)mac_->addr());
+	assoc[1] = new ASSOC802_11(assoc[1]->PAL_Capabilities_list,0x0004,(u_int8_t*)0x00000000);
+	//FixME : read the freq from the netif
+	assoc[2] = new ASSOC802_11(assoc[2]->Prefered_Channel_List,0x0001,(u_int8_t*)0x0B);//always connect to channel 11 2.462GHZ
+	//FixME : check for other connections
+	assoc[3] = new ASSOC802_11(assoc[3]->Connected_Channel,0x0001,(u_int8_t*)0x00);//always send no connections
+	assoc[4] = new ASSOC802_11(assoc[4]->PAL_Version,0x0005,(u_int8_t*)HCI_Read_Local_Version_Info());
+
+	return (u_int8_t*)assoc;
+}
+
+PAL802_11Event* PAL802_11::HCI_Write_Remote_AMP_Assoc(u_int8_t* ampAssoc){
+
 }
 void PAL802_11::HCI_Reset(){
 	//TODO: destroy all existing AMP Physical links
@@ -132,7 +157,50 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 //Physical Link Manager functions
 //Implements operations on physical link includes physical link creation/acceptance/deletion plus channel selection
 //, security establishment and maintenance
- void PAL802_11::HCI_Create_Physical_Link(){}
+ PhysLinkCompleteStatus PAL802_11::HCI_Create_Physical_Link(u_int8_t* remote_amp_assoc){
+	 /*
+	  * 1) Determine the selected channel
+	  * (if MAC not in selected channel)
+		  * 2a) Request MAC to start on channel
+	  * (if MAC is in selected channel)
+		  * 2b) Send HCI Channel Select Event
+	  * 3) set Connection accept timeout
+	  * 4) set NeedPhysLinkCompleteEvent
+	  * 5) set PhysLinkCompleteStatus=0x00 (no error)
+	  */
+
+	 /*
+	  * If no suitable channel
+	  * 1) Determine the selected channel
+	  * 2) send HCI Physical link complete event with status set to "connection rejected due to limited resources 0x0D"
+	  */
+
+	 //ToDo : change the netif freq to the freq in the assoc resp
+		/*
+		 * ASSOC802_11** assoc = (ASSOC802_11**) remote_amp_assoc;
+		printf("Dest Mac address : %i\n",assoc[0]->value_);
+		printf("Dest PAL Cap : %i\n",assoc[1]->value_);
+		printf("Dest pref channel : %i\n",assoc[2]->value_);
+		printf("Dest connected channel : %i\n",assoc[3]->value_);
+		printf("Dest PAL version : %i\n",((Version_Info*)assoc[4]->value_)->PAL_Version);
+		*/
+	 physicalLinkState_ = Starting;
+	 if(!netif_->Is_node_on())
+	 {
+		 netif_->node_on();
+	 }
+	 if(netif_->Is_node_on())
+	 {
+		 physicalLinkState_ = Connecting;
+		 return NoError;
+	 }
+	 else
+	 {
+		 physicalLinkState_ = Disconnected;
+		 return LimitedResources;
+	 }
+
+ }
  void PAL802_11::HCI_Accept_Physical_Link(){}
  void PAL802_11::HCI_Disconnect_Physical_Link(){}
 
@@ -151,4 +219,10 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
  void PAL802_11::HCI_Disconnect_Logical_link(){}
 //Data Manager functions
 //Perform operations on data packets includes : transmit/receive/buffer management
- void PAL802_11::Encapsulate_Packet() {}
+ void PAL802_11::Encapsulate_Packet() {
+
+ }
+ void PAL802_11::recv(Packet* p, Handler* callback = 0){
+	 printf("\n\n\nPAL802.11 has just recieved a packet from MAC 802.11\n\n\n");
+
+ }

@@ -149,6 +149,25 @@ struct Info_Rsp{
 	Info_Rsp(){}
 };
 
+struct AssocRsp{
+	u_int8_t controllerID_;
+	u_int8_t status_;//status of request 0x00 success and 0x01 invalid controller ID
+	u_int8_t* amp_assoc_;
+	AssocRsp(){}
+};
+
+struct createPhyLinkReq{
+	u_int8_t localControllerID_;
+	u_int8_t remoteControllerID_;
+	u_int8_t* amp_assoc_;
+	createPhyLinkReq(u_int8_t localControllerID,u_int8_t remoteControllerID,u_int8_t* amp_assoc){
+		localControllerID_=localControllerID;
+		remoteControllerID_=remoteControllerID;
+		amp_assoc_=amp_assoc;
+	}
+	createPhyLinkReq(){}
+};
+
 struct hdr_a2mp {
     uchar code_;		// defined above
     uint16_t identifier_;// valid values 0x01 - 0xFF
@@ -207,13 +226,14 @@ class A2MP:public Connector {
 	int dAMP_Count_;//destination PAL count
 	Controller_Info *dci_; //destination PAL(s) info
 	Info_Rsp* dPAL_Info_;
+	int localPalID_;
 	int infoReqSent_;
 	int infoRspRecv_;
 	bool discoveryOnly_;
 	PacketQueue q_;
 
 	Connection(A2MP * a2mp, L2CAPChannel * c = 0)
-	 : a2mp_(a2mp), next_(0), cid_(c), daddr_(c->_bd_addr), ready_(0),dAMP_Count_(0),infoReqSent_(0),infoRspRecv_(0),discoveryOnly_(false), q_() {
+	 : a2mp_(a2mp), next_(0), cid_(c), daddr_(c->_bd_addr), ready_(0),dAMP_Count_(0),localPalID_(-1),infoReqSent_(0),infoRspRecv_(0),discoveryOnly_(false), q_() {
 		dci_ = new Controller_Info();
 		dPAL_Info_ = NULL;
 	}
