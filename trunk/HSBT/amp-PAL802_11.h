@@ -40,6 +40,7 @@
 
 
 	#define PAL_Version_ 0x01//TODO:get from Bluetooth assigned numbers
+	#define PAL_Company_Identifier_ 0x0001
 	#define PAL_Sub_version_ 0x0001//vendor specified
 	#define Total_Bandwidth_ 30000//for now assign 30Mbps //Bandwidth unit is Kbps (4octets)
 	#define Controller_ID_ 0x01//802.11 AMP
@@ -65,21 +66,6 @@
 	#define Max80211AMPASSOCLen 672//in Octets
 	#define ShortRangeModePowerMax_ 4//in dBm
 
-
-class L2CAPChannel;
-class ConnectionHandle;
-
-
-class PAL802_11:public PAL {
-    friend class BTNode;
-    friend class  A2MP;
-public:
-  u_int32_t Max_Guaranteed_Bandwidth_; //= Total_Bandwidth	- sum of all active connections
-  u_int32_t Min_Latencay_;//value = mac DIFS + CWmin //for now assign 50microsecond //latency unit is microseconds(4octets)
-  u_int32_t Max_PDU_Size_;// in octets largest allowed L2CAP PDU size//2312//
-  u_int16_t AMP_ASSOC_Length_;//max size in octets of the requested AMP Assoc Structure(2octets)
-public:
-
 	////////////////////////////////////
     //          Data Structures       //
     ////////////////////////////////////
@@ -91,7 +77,7 @@ public:
 	//+-------------------------------------------------+
 	//	1 Octet	|		2 Octets	|		Variable	|
 	//+-------------------------------------------------+
-	struct AMP_ASSOC{
+	struct ASSOC802_11{
 		enum TypeID {
 			MAC_Address=0x01,//length = 0x0006
 			Prefered_Channel_List=0x02,//length = N
@@ -101,10 +87,10 @@ public:
 		};
 		TypeID typeID_;
 		u_int16_t length_;
-		uchar* value_;
+		u_int8_t* value_;
 
-		AMP_ASSOC(TypeID typeID,u_int16_t length,uchar* value):typeID_(typeID),length_(length),value_(value) {}
-		AMP_ASSOC(){}
+		ASSOC802_11(TypeID typeID,u_int16_t length,u_int8_t* value):typeID_(typeID),length_(length),value_(value) {}
+		ASSOC802_11(){}
 	};
 
 	////////////////////////////////////
@@ -112,7 +98,7 @@ public:
 	////////////////////////////////////
 	//HCI Events
 	///////////////////////////////////
-	struct PALEvent:public Event {
+	struct PAL802_11Event:public Event {
 	    enum EventType {
 	    	Channel_Selected,
 	    	Short_Range_Mode_Change_Completed,
@@ -139,27 +125,42 @@ public:
 	    	HCI_Flow_Spec_Modify_complete
 	    };
 	    EventType eventType;
-	    AMP_ASSOC amp_assoc_;
+	    ASSOC802_11 amp_assoc_;
 	    uchar short_Range_Mode_;
 
-	    PALEvent(AMP_ASSOC amp_assoc):eventType(Channel_Selected),amp_assoc_(amp_assoc) {}
-	    PALEvent(uchar Short_Range_Mode):eventType(Short_Range_Mode_Change_Completed),short_Range_Mode_(Short_Range_Mode) {}
+	    PAL802_11Event(ASSOC802_11 amp_assoc):eventType(Channel_Selected),amp_assoc_(amp_assoc) {}
+	    PAL802_11Event(uchar Short_Range_Mode):eventType(Short_Range_Mode_Change_Completed),short_Range_Mode_(Short_Range_Mode) {}
 
 	};
 
 	enum PhysicalLinkStates{
-		Disconnected,
-		Starting,
-		Connecting,
-		Disconnecting,
-		Authenticating,
-		Connected
+		Disconnected=0,
+		Starting=1,
+		Connecting=2,
+		Disconnecting=3,
+		Authenticating=4,
+		Connected=5
 	};
 
 	enum LogicalLinkStatus{
 		Command_Disallowed=0x0C,
 		Success=0x00
 	};
+
+class L2CAPChannel;
+class ConnectionHandle;
+
+
+class PAL802_11:public PAL {
+    friend class BTNode;
+    friend class  A2MP;
+public:
+  u_int32_t Max_Guaranteed_Bandwidth_; //= Total_Bandwidth	- sum of all active connections
+  u_int32_t Min_Latencay_;//value = mac DIFS + CWmin //for now assign 50microsecond //latency unit is microseconds(4octets)
+  u_int32_t Max_PDU_Size_;// in octets largest allowed L2CAP PDU size//2312//
+  u_int16_t AMP_ASSOC_Length_;//max size in octets of the requested AMP Assoc Structure(2octets)
+  PhysicalLinkStates physicalLinkState_;
+
 protected:
 		//send packet to the L2CAP
 	    void sendUp(Packet *, Handler *);
@@ -171,8 +172,9 @@ public:
     void on();//fixme : see if they can be written once for all PALs
     void _init();
     Version_Info* HCI_Read_Local_Version_Info();
-
     AMP_Info* HCI_Read_Local_AMP_Info();
+    u_int8_t* HCI_Read_Local_AMP_Assoc();
+    PAL802_11Event* HCI_Write_Remote_AMP_Assoc(u_int8_t*);
     void HCI_Reset();
     int HCI_Read_Failed_Contact_Counter();
     u_int8_t HCI_Read_Link_Quality();
@@ -192,7 +194,7 @@ public:
     //Physical Link Manager functions
     //Implements operations on physical link includes physical link creation/acceptance/deletion plus channel selection
     //, security establishment and maintenance
-     void HCI_Create_Physical_Link();
+     PhysLinkCompleteStatus HCI_Create_Physical_Link(u_int8_t*);
      void HCI_Accept_Physical_Link();
      void HCI_Disconnect_Physical_Link();
 
@@ -212,7 +214,7 @@ public:
     //Data Manager functions
     //Perform operations on data packets includes : transmit/receive/buffer management
      void Encapsulate_Packet() ;
-
+     void recv(Packet*, Handler*);
 };
 
 
