@@ -365,7 +365,6 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 		Connection* c = lookupConnection(ch->_bd_addr);
 		c->infoRspRecv_++;
 		printf("Got A2MP_GetInfoResponse %i/%i. controller (%i) with maxBW %i\n",c->infoRspRecv_,c->infoReqSent_,((Info_Rsp* )p->accessdata())->controllerID_,((Info_Rsp* )p->accessdata())->maxGaranteedBandwidth_);
-		//printf("c->dPAL_Info_->controllerID_ %i",c->dPAL_Info_->controllerID_);
 		if(c->dPAL_Info_== NULL)
 			c->dPAL_Info_ = (Info_Rsp* )p->accessdata();
 		else if(c->dPAL_Info_->maxGaranteedBandwidth_< ((Info_Rsp* )p->accessdata())->maxGaranteedBandwidth_)
@@ -375,6 +374,22 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 		{
 			c->infoReqSent_=0;
 			c->infoRspRecv_=0;
+
+			for(int i=1;i<c->dAMP_Count_+1;i++)
+			{
+
+				if(c->dci_[i].controller_ID_ == c->dPAL_Info_->controllerID_)
+				{
+					for(int j=0;j<ampNumber_;j++)
+					{
+						if(pal_[j]->controllerType_ == c->dci_[i].controller_Type__){
+							c->localPalID_=j;
+						}
+					}
+					break;
+				}
+			}
+			printf("Local pal number is %i\n",c->localPalID_);
 			A2MP_Get_AMP_AssocReq(ch, c->dPAL_Info_->controllerID_);
 		}
 
@@ -386,7 +401,7 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 		A2MP_Get_AMP_AssocRsp(p, ch);
 		break;
 
-	case A2MP_Get_AMP_AssocResponse:
+	case A2MP_Get_AMP_AssocResponse:{
 		printf("Got A2MP_Get_AMP_AssocResponse.\n");
 		//TODO: get local controller ID
 		//		uchar localControllerId=0x01;
@@ -397,13 +412,15 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 		//			assocStructure = p->accessdata()[2];
 		//		}
 		//		uchar req={localControllerId,remoteControllerId,assocStructure};
-		req = new uchar[p->datalen()];
-		req[0] = 0x01;
-		req[1] = p->accessdata()[0];
-		for (int i = 2; i < p->datalen(); i++) {
-			req[i] = p->accessdata()[i];
-		}
-		A2MP_CreatePhysicalLinkReq(ch, req, p->datalen());
+		Connection* c = lookupConnection(ch->_bd_addr);
+		AssocRsp* rsp = (AssocRsp* )p->accessdata();
+		printf("local pal ID %i\n",c->localPalID_);
+		printf("pal_[c->localPalID_]->controllerStatus_ %i\n",pal_[c->localPalID_]->controllerStatus_);
+		PhysLinkCompleteStatus physLinkCompleteStatus = pal_[c->localPalID_]->HCI_Create_Physical_Link(rsp->amp_assoc_);
+		printf("PhysLinkCompleteStatus %i\n",physLinkCompleteStatus);
+		//Event* e2 = pal_[c->localPalID_]->HCI_Write_Remote_AMP_Assoc(p->accessdata());
+		//A2MP_CreatePhysicalLinkReq(ch, req, p->datalen());
+	}
 		break;
 
 	case A2MP_CreatePhysicalLinkRequest:
@@ -586,40 +603,26 @@ void A2MP::A2MP_Get_AMP_AssocReq(L2CAPChannel * ch, u_int8_t controllerID) {
 void A2MP::A2MP_Get_AMP_AssocRsp(Packet * p, L2CAPChannel * ch) {
 	//get AMP Assoc structure from the PAL and send it as a reply to the request
 	hdr_a2mp *sh = HDR_A2MP(p);
-	int len = 4;
+	//int len = 4;
 	//data field is divided to Controller ID (1 octet) ,Status (1 octet) and AMP_Assoc Structure  (2 or more octets)
 	u_int8_t controllerId = (u_int8_t)p->accessdata()[0];
-	//TODO: request from the HCI to send the controller lists
-	int controllerIdValid = 1;
-	u_int8_t status;
-	uchar* rep;
-	if (controllerIdValid == 0 || controllerId == 0x00) {
-		status = 0x01; // controller ID is invalid or equals 0
-		len = 2;
-		rep = new uchar[2];
-		rep[0] = controllerId;
-		rep[1] = status;
-		//uchar temp[]={controllerId,status};
-		//rep=tmp;
-	} else {
-		status = 0x00;
-		//TODO: get PAL capabilities by issuing HCI Read Local AMP Info Vol2 part E section 7.5.8
-		uchar assocStructure[] = { 0x0000 };//for now set to 0 // the requested AMP Assoc Structure(2 octets)
-		//uchar temp[]={controllerId,status,assocStructure};
-		//rep=tmp;
-		rep = new uchar[4];
-		rep[0] = controllerId;
-		rep[1] = status;
-		rep[2] = assocStructure[0];
-		rep[3] = assocStructure[1];
+	AssocRsp* rsp = new AssocRsp();
+	rsp->controllerID_ = controllerId;
+	rsp->status_ = 0x01;//by default the status is set to invalid controller ID
+	for (int i = 0; i < ampNumber_; i++) {
+		if (pal_[i]->controllerID_ == controllerId) {
+			rsp->status_ = 0x00;//if a matching controller is found change status to success
+			//Request from the Controller to send the Assoc struct
+			rsp->amp_assoc_  = pal_[i]->HCI_Read_Local_AMP_Assoc();
+			break;
+		}
 	}
 
-	Packet *resp = gen_a2mp_pkt(rep, len);
+	Packet *resp = gen_a2mp_pkt((uchar*)rsp, sizeof(AssocRsp));
 	hdr_a2mp *sh_resp = HDR_A2MP(resp);
 	sh_resp->code_ = A2MP_Get_AMP_AssocResponse;
 	sh_resp->identifier_ = sh->identifier_;
-	sh_resp->Length_ = len;
-
+	sh_resp->Length_ =  sizeof(AssocRsp);
 	ch->enque(resp);
 }
 void A2MP::A2MP_CreatePhysicalLinkReq(L2CAPChannel * ch, uchar * req, int len) {
