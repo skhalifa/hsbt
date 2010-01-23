@@ -36,6 +36,7 @@
 
 
 #include "amp-PAL.h"
+#include "packet.h"
 #include "mac-802_11.h"
 
 
@@ -174,7 +175,7 @@ public:
     Version_Info* HCI_Read_Local_Version_Info();
     AMP_Info* HCI_Read_Local_AMP_Info();
     u_int8_t* HCI_Read_Local_AMP_Assoc();
-    PAL802_11Event* HCI_Write_Remote_AMP_Assoc(u_int8_t*);
+    void HCI_Write_Remote_AMP_Assoc(u_int8_t*);
     void HCI_Reset();
     int HCI_Read_Failed_Contact_Counter();
     u_int8_t HCI_Read_Link_Quality();
@@ -195,7 +196,7 @@ public:
     //Implements operations on physical link includes physical link creation/acceptance/deletion plus channel selection
     //, security establishment and maintenance
      PhysLinkCompleteStatus HCI_Create_Physical_Link(u_int8_t*);
-     void HCI_Accept_Physical_Link();
+     PhysLinkCompleteStatus HCI_Accept_Physical_Link(u_int8_t*);
      void HCI_Disconnect_Physical_Link();
 
     //Actions

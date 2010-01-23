@@ -113,6 +113,7 @@ AMP_Info* PAL802_11::HCI_Read_Local_AMP_Info()
 u_int8_t* PAL802_11::HCI_Read_Local_AMP_Assoc()
 {
 	ASSOC802_11** assoc = new ASSOC802_11*[5];
+	printf("My MAC address is %i\n",(u_int8_t*)mac_->addr());
 	assoc[0] = new ASSOC802_11(assoc[0]->MAC_Address,0x0006,(u_int8_t*)mac_->addr());
 	assoc[1] = new ASSOC802_11(assoc[1]->PAL_Capabilities_list,0x0004,(u_int8_t*)0x00000000);
 	//FixME : read the freq from the netif
@@ -124,8 +125,8 @@ u_int8_t* PAL802_11::HCI_Read_Local_AMP_Assoc()
 	return (u_int8_t*)assoc;
 }
 
-PAL802_11Event* PAL802_11::HCI_Write_Remote_AMP_Assoc(u_int8_t* ampAssoc){
-
+void PAL802_11::HCI_Write_Remote_AMP_Assoc(u_int8_t* ampAssoc){
+	this->remoteAMPAssoc_ = ampAssoc;
 }
 void PAL802_11::HCI_Reset(){
 	//TODO: destroy all existing AMP Physical links
@@ -201,13 +202,46 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 	 }
 
  }
- void PAL802_11::HCI_Accept_Physical_Link(){}
+ PhysLinkCompleteStatus PAL802_11::HCI_Accept_Physical_Link(u_int8_t* remote_amp_assoc){
+	 physicalLinkState_ = Starting;
+	 if(!netif_->Is_node_on())
+	 {
+		 netif_->node_on();
+	 }
+	 if(netif_->Is_node_on())
+	 {
+		 physicalLinkState_ = Connecting;
+		 return NoError;
+	 }
+	 else
+	 {
+		 physicalLinkState_ = Disconnected;
+		 return LimitedResources;
+	 }
+
+
+ }
  void PAL802_11::HCI_Disconnect_Physical_Link(){}
 
 //Actions
  void PAL802_11::Determine_Selected_Channel() {}
  void PAL802_11::Signal_MAC_Start_On_Channel(/*physical channel*/) {}
- void PAL802_11::MAC_Connect(/*physical channel*/) {}
+ void PAL802_11::MAC_Connect() {
+	 //This function will make the MAC send a RTS message to the peering MAC
+	 printf("Sending RTS to %i\n",((ASSOC802_11**)this->remoteAMPAssoc_)[0]->value_);
+	 u_int8_t* dap = ((ASSOC802_11**)this->remoteAMPAssoc_)[0]->value_;
+		Packet *p = Packet::alloc(10);
+		char *mh = (char*)p->access(hdr_mac::offset_);
+		mac_->hdr_src(mh, mac_->addr());
+		mac_->hdr_type(mh, ETHERTYPE_IP);
+		mac_->hdr_dst((char*) HDR_MAC(p), (int)dap);
+		Scheduler& s = Scheduler::instance();
+		// let mac decide when to take a new packet from the queue.
+		s.schedule(((Mac802_11*)mac_), p, 0);
+
+
+ }
+
  void PAL802_11::MAC_Initiate_Handshake(/*physical channel*/) {}
  void PAL802_11::Cancel_MAC_Connect_Operation(/*physical channel*/) {}
  void PAL802_11::Signal_MAC_Start_To_Disconnect(/*physical channel*/) {}
@@ -220,8 +254,68 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 //Data Manager functions
 //Perform operations on data packets includes : transmit/receive/buffer management
  void PAL802_11::Encapsulate_Packet() {
-
  }
+//
+//	 void PAL802_11::sendDown(Packet* p)
+//	 {
+//	 	hdr_cmn *ch = HDR_CMN(p);
+//	 	hdr_ip *ih = HDR_IP(p);
+//
+//	 	nsaddr_t dst = (nsaddr_t)Address::instance().get_nodeaddr(ih->daddr());
+//
+//	 	hdr_ll *llh = HDR_LL(p);
+//	 	char *mh = (char*)p->access(hdr_mac::offset_);
+//
+//	 	llh->seqno_ = ++seqno_;
+//	 	llh->lltype() = LL_DATA;
+//
+//	 	mac_->hdr_src(mh, mac_->addr());
+//	 	mac_->hdr_type(mh, ETHERTYPE_IP);
+//	 	int tx = 0;
+//
+//	 	switch(ch->addr_type()) {
+//
+//	 	case NS_AF_ILINK:
+//	 		mac_->hdr_dst((char*) HDR_MAC(p), ch->next_hop());
+//	 		break;
+//
+//	 	case NS_AF_INET:
+//	 		dst = ch->next_hop();
+//	 		/* FALL THROUGH */
+//
+//	 	case NS_AF_NONE:
+//
+//	 		if (IP_BROADCAST == (u_int32_t) dst)
+//	 		{
+//	 			mac_->hdr_dst((char*) HDR_MAC(p), MAC_BROADCAST);
+//	 			break;
+//	 		}
+//	 		/* Assuming arptable is present, send query */
+//	 		if (arptable_) {
+//	 			tx = arptable_->arpresolve(dst, p, this);
+//	 			break;
+//	 		}
+//
+//
+//	 	default:
+//
+//	 		int IPnh = (lanrouter_) ? lanrouter_->next_hop(p) : -1;
+//	 		if (IPnh < 0)
+//	 			mac_->hdr_dst((char*) HDR_MAC(p),macDA_);
+//	 		else if (varp_)
+//	 			tx = varp_->arpresolve(IPnh, p);
+//	 		else
+//	 			mac_->hdr_dst((char*) HDR_MAC(p), IPnh);
+//	 		break;
+//	 	}
+//
+//	 	if (tx == 0) {
+//	 		Scheduler& s = Scheduler::instance();
+//	 	// let mac decide when to take a new packet from the queue.
+//	 		s.schedule(downtarget_, p, delay_);
+//	 	}
+//	 }
+
  void PAL802_11::recv(Packet* p, Handler* callback = 0){
 	 printf("\n\n\nPAL802.11 has just recieved a packet from MAC 802.11\n\n\n");
 
