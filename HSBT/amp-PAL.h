@@ -118,6 +118,7 @@ public:
   //Bd_info *_my_info;	//fixme : what to do with it??
   //Bd_info *_bd;		// bt device database //fixme : what to do with it??
   //bd_addr_t ad; //use mac.addr() instead
+  u_int8_t* remoteAMPAssoc_;
 
 protected:
 	//send packet to the L2CAP
@@ -140,7 +141,7 @@ public:
     virtual Version_Info* HCI_Read_Local_Version_Info()= 0;
     virtual AMP_Info* HCI_Read_Local_AMP_Info()= 0;
     virtual u_int8_t* HCI_Read_Local_AMP_Assoc()= 0;
-    virtual Event* HCI_Write_Remote_AMP_Assoc(u_int8_t*)= 0;
+    virtual void HCI_Write_Remote_AMP_Assoc(u_int8_t*)= 0;
     virtual void HCI_Reset()= 0;
     virtual int HCI_Read_Failed_Contact_Counter(/*logical link*/)= 0;
     virtual u_int8_t HCI_Read_Link_Quality()= 0;
@@ -159,7 +160,7 @@ public:
     //Implements operations on physical link includes physical link creation/acceptance/deletion plus channel selection
     //, security establishment and maintenance
     virtual PhysLinkCompleteStatus HCI_Create_Physical_Link(u_int8_t*)= 0;
-    virtual void HCI_Accept_Physical_Link()= 0;
+    virtual PhysLinkCompleteStatus HCI_Accept_Physical_Link(u_int8_t*)= 0;
     virtual void HCI_Disconnect_Physical_Link()= 0;
 
     //Actions

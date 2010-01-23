@@ -104,7 +104,7 @@ A2MP::Connection * A2MP::lookupConnection(bd_addr_t addr) {
 	while (wk) {
 		printf("check with %i \n",wk->daddr_);
 		if (wk->daddr_ == addr) {
-			printf("connection found\n");
+			printf("connection found to address %i\n",addr);
 			return wk;
 		}
 		wk = wk->next_;
@@ -366,9 +366,9 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 		c->infoRspRecv_++;
 		printf("Got A2MP_GetInfoResponse %i/%i. controller (%i) with maxBW %i\n",c->infoRspRecv_,c->infoReqSent_,((Info_Rsp* )p->accessdata())->controllerID_,((Info_Rsp* )p->accessdata())->maxGaranteedBandwidth_);
 		if(c->dPAL_Info_== NULL)
-			c->dPAL_Info_ = (Info_Rsp* )p->accessdata();
+			c->dPAL_Info_ = new Info_Rsp((Info_Rsp* )p->accessdata());
 		else if(c->dPAL_Info_->maxGaranteedBandwidth_< ((Info_Rsp* )p->accessdata())->maxGaranteedBandwidth_)
-			c->dPAL_Info_ = (Info_Rsp* )p->accessdata();
+			c->dPAL_Info_ = new Info_Rsp((Info_Rsp* )p->accessdata());
 		printf("Candidate controller (%i) of bandwidth %i\n",c->dPAL_Info_->controllerID_,c->dPAL_Info_->maxGaranteedBandwidth_);
 		if(c->infoReqSent_ == c->infoRspRecv_)
 		{
@@ -384,12 +384,15 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 					{
 						if(pal_[j]->controllerType_ == c->dci_[i].controller_Type__){
 							c->localPalID_=j;
+							c->remotePalID_=c->dPAL_Info_->controllerID_;
 						}
 					}
 					break;
 				}
 			}
 			printf("Local pal number is %i\n",c->localPalID_);
+			printf("Remote pal number is %i\n",c->remotePalID_);
+			printf("c->dPAL_Info_->controllerID_ %i\n",c->dPAL_Info_->controllerID_);
 			A2MP_Get_AMP_AssocReq(ch, c->dPAL_Info_->controllerID_);
 		}
 
@@ -415,25 +418,66 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 		Connection* c = lookupConnection(ch->_bd_addr);
 		AssocRsp* rsp = (AssocRsp* )p->accessdata();
 		printf("local pal ID %i\n",c->localPalID_);
+		printf("remote pal ID %i\n",c->remotePalID_);
+		printf("remote pal from pal info ID %i\n",c->dPAL_Info_->controllerID_);
 		printf("pal_[c->localPalID_]->controllerStatus_ %i\n",pal_[c->localPalID_]->controllerStatus_);
 		PhysLinkCompleteStatus physLinkCompleteStatus = pal_[c->localPalID_]->HCI_Create_Physical_Link(rsp->amp_assoc_);
-		printf("PhysLinkCompleteStatus %i\n",physLinkCompleteStatus);
-		//Event* e2 = pal_[c->localPalID_]->HCI_Write_Remote_AMP_Assoc(p->accessdata());
-		//A2MP_CreatePhysicalLinkReq(ch, req, p->datalen());
+		if(physLinkCompleteStatus == NoError)
+		{
+			pal_[c->localPalID_]->HCI_Write_Remote_AMP_Assoc(rsp->amp_assoc_);
+			printf("remote mac address is %i\n",((ASSOC802_11**)rsp->amp_assoc_)[0]->value_);
+			A2MP_CreatePhysicalLinkReq(ch,c);
+		}
+		else
+			printf("Unable to start MAC\n");
 	}
 		break;
 
 	case A2MP_CreatePhysicalLinkRequest:
+	{
 		printf("Got A2MP_CreatePhysicalLinkRequest.\n");
-		//TODO: PAL open the specified AMP radio
-		A2MP_CreatePhysicalLinkRsp(p, ch);
+		//PAL open the specified AMP radio
+		Connection* c = connect(ch->_bd_addr);
+		CreatePhyLinkReq* req = (CreatePhyLinkReq*) p->accessdata();
+		c->localPalID_=req->remoteControllerID_;
+		c->remotePalID_ = req->localControllerID_;
+		printf("receiver : c->localPalID_= %i , c->remotePalID_ = %i \n",c->localPalID_,c->remotePalID_);
+
+		CreatePhyLinkRspStatus status = InvalidControllerId;
+		for (int i = 0; i < ampNumber_; i++) {
+			printf("pal_[i]->controllerID_ %i and  c->localPalID_ %i\n",pal_[i]->controllerID_,c->localPalID_);
+			if (pal_[i]->controllerID_ == c->localPalID_) {
+				status = PhyCreateSuccess;//if a matching controller is found change status to success
+				c->localPalID_ = i;
+				break;
+			}
+		}
+
+		if(status == PhyCreateSuccess){
+			PhysLinkCompleteStatus physLinkCompleteStatus = pal_[c->localPalID_]->HCI_Accept_Physical_Link(req->amp_assoc_);
+			if(physLinkCompleteStatus == NoError)
+			{
+				printf("success\n");
+				pal_[c->localPalID_]->HCI_Write_Remote_AMP_Assoc(req->amp_assoc_);
+			}
+			else{
+				printf("Unable to start MAC\n");
+				status = FailedUnableToStartLinkCreation;
+			}
+		}
+
+		A2MP_CreatePhysicalLinkRsp(p,ch,c,status);
+	}
 		break;
 
 	case A2MP_CreatePhysicalLinkResponse:
+	{
 		printf("Got A2MP_CreatePhysicalLinkResponse.\n");
 		//TODO: PAL create AMP physical link
+		Connection* c = lookupConnection(ch->_bd_addr);
+		pal_[c->localPalID_]->MAC_Connect();
+	}
 		break;
-
 	case A2MP_DisconnectPhysicalLinkRequest:
 		printf("Got A2MP_DisconnectPhysicalLinkRequest.\n");
 		//TODO: PAL shutdown the specified AMP radio
@@ -606,6 +650,7 @@ void A2MP::A2MP_Get_AMP_AssocRsp(Packet * p, L2CAPChannel * ch) {
 	//int len = 4;
 	//data field is divided to Controller ID (1 octet) ,Status (1 octet) and AMP_Assoc Structure  (2 or more octets)
 	u_int8_t controllerId = (u_int8_t)p->accessdata()[0];
+	printf("Asso rsp controller Id %i\n",controllerId);
 	AssocRsp* rsp = new AssocRsp();
 	rsp->controllerID_ = controllerId;
 	rsp->status_ = 0x01;//by default the status is set to invalid controller ID
@@ -625,40 +670,30 @@ void A2MP::A2MP_Get_AMP_AssocRsp(Packet * p, L2CAPChannel * ch) {
 	sh_resp->Length_ =  sizeof(AssocRsp);
 	ch->enque(resp);
 }
-void A2MP::A2MP_CreatePhysicalLinkReq(L2CAPChannel * ch, uchar * req, int len) {
-	//TODO: communicate with the PAL to create the actual AMP physical link
-	Packet *p = gen_a2mp_pkt(req, len);
+void A2MP::A2MP_CreatePhysicalLinkReq(L2CAPChannel * ch,Connection* c) {
+
+	printf("A2MP::A2MP_CreatePhysicalLinkReq \n");
+	CreatePhyLinkReq* req = new CreatePhyLinkReq(c->localPalID_,c->dPAL_Info_->controllerID_,pal_[c->localPalID_]->HCI_Read_Local_AMP_Assoc());
+	printf("In createphyreq c->localPalID_ %i and remote c->dPAL_Info_->controllerID_ %i\n",c->localPalID_,c->dPAL_Info_->controllerID_);
+	Packet *p = gen_a2mp_pkt((u_int8_t*)req, sizeof(CreatePhyLinkReq));
 	hdr_a2mp *sh = HDR_A2MP(p);
 	sh->code_ = A2MP_CreatePhysicalLinkRequest;
 	sh->identifier_ = identifier_++;
-	sh->Length_ = len;
+	sh->Length_ = sizeof(CreatePhyLinkReq);
 
 	ch->enque(p);
 	//inqAndSend(p);
 }
-void A2MP::A2MP_CreatePhysicalLinkRsp(Packet * p, L2CAPChannel * ch) {
-	hdr_a2mp *sh = HDR_A2MP(p);
-	int len = 3;
+void A2MP::A2MP_CreatePhysicalLinkRsp(Packet * p,L2CAPChannel * ch ,Connection* c,CreatePhyLinkRspStatus status) {
+
 	//data field is divided to local Controller ID (1 octet),remote Controller ID (1 octet) and Status (1 octet)
-	uchar localcontrollerId = p->accessdata()[1];
-	uchar remotecontrollerId = p->accessdata()[0];
-	//TODO: request from the HCI to send the controller lists
-	int controllerIdValid = 1;
-	uchar status;
-	if (controllerIdValid == 0 || localcontrollerId == 0x00) {
-		status = 0x01; // controller ID is invalid or equals 0
-	} else if (sh->code_ == A2MP_DisconnectPhysicalLinkRequest) {
-		status = 0x04;//Failed - AMP Disconnect Physical link request packet received
-	} else {
-		//TODO:Add other failure codes
-		status = 0x00;//IF code is valid the link is established so other status are ignored for now
-	}
-	uchar rep[] = { localcontrollerId, remotecontrollerId, status };
-	Packet *resp = gen_a2mp_pkt(rep, len);
+	hdr_a2mp *sh = HDR_A2MP(p);
+	CreatePhyLinkRsp* rep = new CreatePhyLinkRsp(c->localPalID_,c->remotePalID_,status);
+	Packet *resp = gen_a2mp_pkt((u_int8_t*)rep, sizeof(CreatePhyLinkRsp));
 	hdr_a2mp *sh_resp = HDR_A2MP(resp);
 	sh_resp->code_ = A2MP_CreatePhysicalLinkResponse;
 	sh_resp->identifier_ = sh->identifier_;
-	sh_resp->Length_ = len;
+	sh_resp->Length_ = sizeof(CreatePhyLinkRsp);
 
 	ch->enque(resp);
 }

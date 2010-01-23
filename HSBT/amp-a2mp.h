@@ -100,7 +100,18 @@ Packet Format
 #define RadioHasMediumCapacityLeft		0x04 //used when radio is powered up to indicate that the from 30% to 70% of bandwidth is available to be used by bluetooth
 #define RadioHasHighCapacityLeft		0x05 //used when radio is powered up to indicate that the from 70% to 100% of bandwidth is available to be used by bluetooth
 #define RadioHasFullCapacityLeft		0x06 //used when radio is powered up to indicate that the full bandwidth is available to be used by bluetooth
-
+//========================
+//CreatePhyLinkRsp Status
+//========================
+enum CreatePhyLinkRspStatus{
+		PhyCreateSuccess=0x00,
+		InvalidControllerId=0x01,
+		FailedUnableToStartLinkCreation=0x02,
+		FailedCollisionOccured=0x03,
+		FailedDisconnectPhysicalRequestRecieved=0x04,
+		FailedPhysicalLinkExists=0x05,
+		FailedSecurityViolation=0x06
+};
 //==================
 //Controller List
 //==================
@@ -147,6 +158,15 @@ struct Info_Rsp{
 		AMP_AssocStructureSize_=AMP_AssocStructureSize;
 	}
 	Info_Rsp(){}
+	Info_Rsp(Info_Rsp* info_rsp){
+		this->controllerID_ = info_rsp->controllerID_;
+		this->status_ = info_rsp->status_;
+		this->totalBandwidth_ = info_rsp->totalBandwidth_;
+		this->maxGaranteedBandwidth_ = info_rsp->maxGaranteedBandwidth_;
+		this->minLatency_ = info_rsp->minLatency_;
+		this->PAL_Capabilities_ = info_rsp->PAL_Capabilities_;
+		this->AMP_AssocStructureSize_ = info_rsp->AMP_AssocStructureSize_;
+	}
 };
 
 struct AssocRsp{
@@ -156,16 +176,28 @@ struct AssocRsp{
 	AssocRsp(){}
 };
 
-struct createPhyLinkReq{
+struct CreatePhyLinkReq{
 	u_int8_t localControllerID_;
 	u_int8_t remoteControllerID_;
 	u_int8_t* amp_assoc_;
-	createPhyLinkReq(u_int8_t localControllerID,u_int8_t remoteControllerID,u_int8_t* amp_assoc){
+	CreatePhyLinkReq(u_int8_t localControllerID,u_int8_t remoteControllerID,u_int8_t* amp_assoc){
 		localControllerID_=localControllerID;
 		remoteControllerID_=remoteControllerID;
 		amp_assoc_=amp_assoc;
 	}
-	createPhyLinkReq(){}
+	CreatePhyLinkReq(){}
+};
+
+struct CreatePhyLinkRsp{
+	u_int8_t localControllerID_;
+	u_int8_t remoteControllerID_;
+	CreatePhyLinkRspStatus status_;
+	CreatePhyLinkRsp(u_int8_t localControllerID,u_int8_t remoteControllerID,CreatePhyLinkRspStatus status){
+		localControllerID_=localControllerID;
+		remoteControllerID_=remoteControllerID;
+		status_=status;
+	}
+	CreatePhyLinkRsp(){}
 };
 
 struct hdr_a2mp {
@@ -224,16 +256,17 @@ class A2MP:public Connector {
 	int daddr_;//destination address
 	int ready_;
 	int dAMP_Count_;//destination PAL count
-	Controller_Info *dci_; //destination PAL(s) info
+	Controller_Info* dci_; //destination PAL(s) info
 	Info_Rsp* dPAL_Info_;
 	int localPalID_;
+	int remotePalID_;
 	int infoReqSent_;
 	int infoRspRecv_;
 	bool discoveryOnly_;
 	PacketQueue q_;
 
 	Connection(A2MP * a2mp, L2CAPChannel * c = 0)
-	 : a2mp_(a2mp), next_(0), cid_(c), daddr_(c->_bd_addr), ready_(0),dAMP_Count_(0),localPalID_(-1),infoReqSent_(0),infoRspRecv_(0),discoveryOnly_(false), q_() {
+	 : a2mp_(a2mp), next_(0), cid_(c), daddr_(c->_bd_addr), ready_(0),dAMP_Count_(0),localPalID_(-1),remotePalID_(-1),infoReqSent_(0),infoRspRecv_(0),discoveryOnly_(false), q_() {
 		dci_ = new Controller_Info();
 		dPAL_Info_ = NULL;
 	}
@@ -276,8 +309,8 @@ class A2MP:public Connector {
     void A2MP_GetInfoRsp(Packet *, L2CAPChannel *);
     void A2MP_Get_AMP_AssocReq(L2CAPChannel *,u_int8_t);
     void A2MP_Get_AMP_AssocRsp(Packet *, L2CAPChannel *);
-    void A2MP_CreatePhysicalLinkReq(L2CAPChannel *,uchar *, int);
-    void A2MP_CreatePhysicalLinkRsp(Packet *, L2CAPChannel *);
+    void A2MP_CreatePhysicalLinkReq(L2CAPChannel *,Connection*);
+    void A2MP_CreatePhysicalLinkRsp(Packet *,L2CAPChannel *,Connection*,CreatePhyLinkRspStatus);
     void A2MP_DisconnectPhysicalLinkReq(uchar *, int);
     void A2MP_DisconnectPhysicalLinkRsp(Packet *, L2CAPChannel *);
 
