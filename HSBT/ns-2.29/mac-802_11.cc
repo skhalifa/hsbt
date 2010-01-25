@@ -804,13 +804,12 @@ Mac802_11::check_pktTx()
 void
 Mac802_11::sendRTS(int dst)
 {
+	printf("Sending PAL RTS to %i\n",dst);
 	Packet *p = Packet::alloc();
 	hdr_cmn* ch = HDR_CMN(p);
 	struct rts_frame *rf = (struct rts_frame*)p->access(hdr_mac::offset_);
-	
 	assert(pktTx_);
 	assert(pktRTS_ == 0);
-
 	/*
 	 *  If the size of the packet is larger than the
 	 *  RTSThreshold, then perform the RTS/CTS exchange.
@@ -820,13 +819,11 @@ Mac802_11::sendRTS(int dst)
 		Packet::free(p);
 		return;
 	}
-
 	ch->uid() = 0;
 	ch->ptype() = PT_MAC;
 	ch->size() = phymib_.getRTSlen();
 	ch->iface() = -2;
 	ch->error() = 0;
-
 	bzero(rf, MAC_HDR_LEN);
 
 	rf->rf_fc.fc_protocol_version = MAC_ProtocolVersion;
@@ -843,10 +840,10 @@ Mac802_11::sendRTS(int dst)
 
 	//rf->rf_duration = RTS_DURATION(pktTx_);
 	STORE4BYTE(&dst, (rf->rf_ra));
-	
+
 	/* store rts tx time */
  	ch->txtime() = txtime(ch->size(), basicRate_);
-	
+
 	STORE4BYTE(&index_, (rf->rf_ta));
 
 	/* calculate rts duration field */	
@@ -856,12 +853,15 @@ Mac802_11::sendRTS(int dst)
                                + txtime(pktTx_)
 			       + phymib_.getSIFS()
 			       + txtime(phymib_.getACKlen(), basicRate_));
+
 	pktRTS_ = p;
+
 }
 
 void
 Mac802_11::sendCTS(int dst, double rts_duration)
 {
+	printf("Sending PAL CTS to %i\n",dst);
 	Packet *p = Packet::alloc();
 	hdr_cmn* ch = HDR_CMN(p);
 	struct cts_frame *cf = (struct cts_frame*)p->access(hdr_mac::offset_);
@@ -876,6 +876,7 @@ Mac802_11::sendCTS(int dst, double rts_duration)
 	ch->iface() = -2;
 	ch->error() = 0;
 	//ch->direction() = hdr_cmn::DOWN;
+
 	bzero(cf, MAC_HDR_LEN);
 
 	cf->cf_fc.fc_protocol_version = MAC_ProtocolVersion;
@@ -889,20 +890,19 @@ Mac802_11::sendCTS(int dst, double rts_duration)
  	cf->cf_fc.fc_more_data	= 0;
  	cf->cf_fc.fc_wep	= 0;
  	cf->cf_fc.fc_order	= 0;
-	
+
 	//cf->cf_duration = CTS_DURATION(rts_duration);
 	STORE4BYTE(&dst, (cf->cf_ra));
 	
 	/* store cts tx time */
 	ch->txtime() = txtime(ch->size(), basicRate_);
-	
+;
 	/* calculate cts duration */
 	cf->cf_duration = usec(sec(rts_duration)
                               - phymib_.getSIFS()
                               - txtime(phymib_.getCTSlen(), basicRate_));
 
 
-	
 	pktCTRL_ = p;
 	
 }
@@ -910,6 +910,7 @@ Mac802_11::sendCTS(int dst, double rts_duration)
 void
 Mac802_11::sendACK(int dst)
 {
+	printf("Sending PAL ACK to %i\n",dst);
 	Packet *p = Packet::alloc();
 	hdr_cmn* ch = HDR_CMN(p);
 	struct ack_frame *af = (struct ack_frame*)p->access(hdr_mac::offset_);
@@ -1349,6 +1350,7 @@ Mac802_11::recv_timer()
 void
 Mac802_11::recvRTS(Packet *p)
 {
+	printf("RTS recieved\n");
 	struct rts_frame *rf = (struct rts_frame*)p->access(hdr_mac::offset_);
 
 	if(tx_state_ != MAC_IDLE) {
@@ -1369,11 +1371,13 @@ Mac802_11::recvRTS(Packet *p)
 	/*
 	 *  Stop deferring - will be reset in tx_resume().
 	 */
+
 	if(mhDefer_.busy()) mhDefer_.stop();
 
 	tx_resume();
 
-	mac_log(p);
+	//mac_log(p);
+;
 }
 
 /*
@@ -1412,6 +1416,7 @@ Mac802_11::txtime(double psz, double drt)
 void
 Mac802_11::recvCTS(Packet *p)
 {
+	printf("CTS recieved");
 	if(tx_state_ != MAC_RTS) {
 		discard(p, DROP_MAC_INVALID_STATE);
 		return;
@@ -1432,12 +1437,13 @@ Mac802_11::recvCTS(Packet *p)
 	ssrc_ = 0;
 	tx_resume();
 
-	mac_log(p);
+	//mac_log(p);
 }
 
 void
 Mac802_11::recvDATA(Packet *p)
 {
+	printf("data recieved");
 	struct hdr_mac802_11 *dh = HDR_MAC802_11(p);
 	u_int32_t dst, src, size;
 	struct hdr_cmn *ch = HDR_CMN(p);
@@ -1590,5 +1596,5 @@ Mac802_11::recvACK(Packet *p)
 
 	tx_resume();
 
-	mac_log(p);
+	//mac_log(p);
 }
