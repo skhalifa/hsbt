@@ -150,26 +150,6 @@ NS_TCL_LIB_STL = tcl/lib/ns-diffusion.tcl
 # !include <conf/makefile.win>
 
 OBJ_CC = \
-	bluetooth/baseband.o bluetooth/bt-node.o \
-	bluetooth/l2cap.o bluetooth/lmp.o \
-	bluetooth/lmp-link.o bluetooth/lmp-piconet.o \
-	bluetooth/amp-PAL802_11.o bluetooth/amp-a2mp.o  \
-	bluetooth/bnep.o bluetooth/sdp.o \
-	bluetooth/rendpoint.o \
-	bluetooth/bt-lossmod.o \
-	bluetooth/bt-linksched.o \
-	bluetooth/sco-agent.o \
-	bluetooth/aodv-bt.o bluetooth/dsdv-bt.o \
-	bluetooth/tora-bt.o bluetooth/dsr-bt.o \
-	bluetooth/manual-bt.o \
-	bluetooth/wnode.o \
-	bluetooth/statis.o \
-	bluetooth/bt-stat.o \
-	bluetooth/scat-form.o \
-	bluetooth/scat-form-law.o \
-	bluetooth/scat-form-pl.o \
-	bluetooth/trace-bt.o \
-	bluetooth/bt-channel.o bluetooth/classifier-compound.o \
 	tools/random.o tools/rng.o tools/ranvar.o common/misc.o common/timer-handler.o \
 	common/scheduler.o common/object.o common/packet.o \
 	common/ip.o routing/route.o common/connector.o common/ttl.o \
@@ -322,6 +302,26 @@ OBJ_CC = \
 	wpan/p802_15_4nam.o wpan/p802_15_4phy.o \
 	wpan/p802_15_4sscs.o wpan/p802_15_4timer.o \
 	wpan/p802_15_4trace.o wpan/p802_15_4transac.o \
+	bluetooth/baseband.o bluetooth/bt-node.o \
+	bluetooth/l2cap.o bluetooth/lmp.o \
+	bluetooth/lmp-link.o bluetooth/lmp-piconet.o \
+	bluetooth/amp-PAL802_11.o bluetooth/amp-a2mp.o  \
+	bluetooth/bnep.o bluetooth/sdp.o \
+	bluetooth/rendpoint.o \
+	bluetooth/bt-lossmod.o \
+	bluetooth/bt-linksched.o \
+	bluetooth/sco-agent.o \
+	bluetooth/aodv-bt.o bluetooth/dsdv-bt.o \
+	bluetooth/tora-bt.o bluetooth/dsr-bt.o \
+	bluetooth/manual-bt.o \
+	bluetooth/wnode.o \
+	bluetooth/statis.o \
+	bluetooth/bt-stat.o \
+	bluetooth/scat-form.o \
+	bluetooth/scat-form-law.o \
+	bluetooth/scat-form-pl.o \
+	bluetooth/trace-bt.o \
+	bluetooth/bt-channel.o bluetooth/classifier-compound.o \
 	@V_STLOBJ@
 
 
