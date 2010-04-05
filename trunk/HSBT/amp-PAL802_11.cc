@@ -35,6 +35,11 @@
 
 #include "amp-PAL802_11.h"
 
+int hdr_pal::offset_;
+
+
+/////////////////////////////////PAL802.11//////////////////////////////////////
+
 static class PAL802_11class:public TclClass {
   public:
 	PAL802_11class():TclClass("PAL/802_11") {}

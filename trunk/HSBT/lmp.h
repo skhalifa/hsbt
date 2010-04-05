@@ -47,6 +47,7 @@ class L2CAPChannel;
 class ConnectionHandle;
 class LMP;
 class LMPLink;
+class PAL;
 
 struct QosParam {
     uint8_t Flags;
@@ -122,15 +123,17 @@ struct LMPEvent:public Event {
 //                                     \- ...
 //
 //         LMPLink -- ConnectionHandle -- SCO Channel
-//         
+//
+
 class ConnectionHandle {
   public:
-    ConnectionHandle(uint16_t, uint8_t rs = 1);
+    ConnectionHandle(uint16_t, uint8_t rs = 1,uint8_t controlerId=0);
     void add_channel(L2CAPChannel *);
     void remove_channel(L2CAPChannel *);
-    inline void setLink(LMPLink * l) { link = l; } 
+    inline void setLink(LMPLink * l) { link = l; }
+    inline void setPAL(PAL * pal) { pal_ = pal; }
     int isMaster();
-    // L2CAPChannel *lastChannel();
+
 
     ConnectionHandle *next;
     ConnectionHandle *reqScoHand;
@@ -151,6 +154,8 @@ class ConnectionHandle {
     int numChan;
     int pktRecvedLen;		// for L2CAP reassembling.
     int pktLen;			// for L2CAP reassembling.
+    PAL* pal_;
+    uint8_t controllerId_;
 };
 
 struct PageReq {

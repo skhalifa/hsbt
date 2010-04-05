@@ -223,7 +223,7 @@ struct hdr_a2mp {
 };
 
 
-class A2MP;
+//class A2MP;
 
 class A2MPTimer:public Handler {
   public:
