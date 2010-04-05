@@ -73,6 +73,7 @@
 #define HDR_BNEP(p)    (hdr_bnep::access(p))
 #define HDR_SDP(p)     (hdr_sdp::access(p))
 #define HDR_A2MP(p)     (hdr_a2mp::access(p))
+#define HDR_PAL(p)     (hdr_pal::access(p))
 
 /* --------------------------------------------------------------------*/
 
@@ -178,6 +179,7 @@ enum packet_t {
 	PT_BNEP,
 	PT_SDP,
 	PT_A2MP,
+	PT_PAL,
 	// insert new packet types here
 	PT_NTYPE // This MUST be the LAST one
 };
@@ -281,6 +283,7 @@ public:
 		name_[PT_BNEP] = "bnep";
 		name_[PT_SDP] = "sdp";
 		name_[PT_A2MP] = "a2mp";
+		name_[PT_PAL] = "pal";
 
 		name_[PT_NTYPE]= "undefined";
 	}
