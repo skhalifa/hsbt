@@ -329,11 +329,27 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 			$fec down-target $outerr
 			$err target $netif
 		}
-		#FIXME : see how to implement the god for bluetooth nodes
-		#	set god_ [God instance]
-		#        if {$mactype == "Mac/802_11"} {
-		#		$mac nodes [$god_ num_nodes]
-		#	}
+		#Implement the god for bluetooth nodes
+#		Quoted from CMU document on god, "God (General Operations Director) is the object 
+#		that is used to store global information about the state of the environment, 
+#		network or nodes that an omniscent observer would have, but that should not be made known 
+#		to any participant in the simulation." Currently, God object stores the total number of mobilenodes 
+#		and a table of shortest number of hops required to reach from one node to another. 
+#		The next hop information is normally loaded into god object from movement pattern files,
+#		before simulation begins, since calculating this on the fly during simulation runs can be quite time consuming.
+#		However, in order to keep this example simple we avoid using movement pattern files and 
+#		thus do not provide God with next hop information. The usage of movement pattern files and 
+#		feeding of next hop info to God shall be shown in the example in the next sub-section.
+#
+#		The procedure create-god is defined in ~ns/tcl/mobility/com.tcl, 
+#		which allows only a single global instance of the God object to be created during a simulation. 
+#		In addition to the evaluation functionalities, the God object is called internally by MAC objects in mobilenodes.
+#		So even though we may not utilise God for evaluation purposes,(as in this example) we still need to create God. 
+
+			set god_ [God instance]
+		       # if {$mactype == "Mac/802_11"} {
+				$mac nodes [$god_ num_nodes]
+			#}
 		
 		
 		#
@@ -381,7 +397,8 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 		# let topo keep handle of channel
 		$topo channel $channel
 		# ============================================================
-	
+	###################log#######################
+
 #		if { [Simulator set MacTrace_] == "ON" } {
 #			#
 #			# Trace RTS/CTS/ACK Packets
@@ -389,7 +406,9 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 #			if {$imepflag != ""} {
 #				set rcvT [$self mobility-trace Recv "MAC"]
 #			} else {
-#				set rcvT [cmu-trace Recv "MAC" $self]
+#				set rcvT [bt-trace Recv "MAC" $self]
+#				#set rcvT [cmu-trace Recv "MAC" $self]
+#				#set rcvT [$self mobility-trace Recv "MAC"]
 #			}
 #			$mac log-target $rcvT
 #			if { $namfp != "" } {
@@ -401,7 +420,9 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 #			if {$imepflag != ""} {
 #				set sndT [$self mobility-trace Send "MAC"]
 #			} else {
-#				set sndT [cmu-trace Send "MAC" $self]
+#				set sndT [bt-trace Send "MAC" $self]
+#				#set sndT [cmu-trace Send "MAC" $self]
+#				#set sndT [$self mobility-trace Send "MAC"]
 #			}
 #			$sndT target [$mac down-target]
 #			$mac down-target $sndT
@@ -414,7 +435,9 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 #			if {$imepflag != ""} {
 #				set rcvT [$self mobility-trace Recv "MAC"]
 #			} else {
-#				set rcvT [cmu-trace Recv "MAC" $self]
+#				set rcvT [bt-trace Recv "MAC" $self]
+#				#set rcvT [cmu-trace Recv "MAC" $self]
+#				#set rcvT [$self mobility-trace Recv "MAC"]
 #			}
 #			$rcvT target [$mac up-target]
 #			$mac up-target $rcvT
@@ -427,7 +450,9 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 #			if {$imepflag != ""} {
 #				set drpT [$self mobility-trace Drop "MAC"]
 #			} else {
-#				set drpT [cmu-trace Drop "MAC" $self]
+#				set drpT [bt-trace Drop "MAC" $self]
+#				#set drpT [cmu-trace Drop "MAC" $self]
+#				#set drpT [$self mobility-trace Drop "MAC"]
 #			}
 #			$mac drop-target $drpT
 #			if { $namfp != "" } {
@@ -437,7 +462,7 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 #			$mac log-target [$ns set nullAgent_]
 #			$mac drop-target [$ns set nullAgent_]
 #		}
-	
+	###################End log#######################
 	# change wrt Mike's code
 	       if { [Simulator set EotTrace_] == "ON" } {
 	               #
@@ -447,7 +472,9 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 	               if {$imepflag != ""} {
 	                       set eotT [$self mobility-trace EOT "MAC"]
 	               } else {
-	                       set eoT [cmu-trace EOT "MAC" $self]
+	                       set eoT [bt-trace EOT "MAC" $self]
+			       #set eoT [cmu-trace EOT "MAC" $self]
+			       #set eotT [$self mobility-trace EOT "MAC"]
 	               }
 	               $mac eot-target $eotT
 	       }
