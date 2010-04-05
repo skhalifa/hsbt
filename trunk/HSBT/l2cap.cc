@@ -83,13 +83,13 @@ static class L2CAPClass:public TclClass {
 //                      L2CAPChannel                    //
 //////////////////////////////////////////////////////////
 L2CAPChannel::L2CAPChannel(L2CAP * l2c, int psm, ConnectionHandle * connh,
-			   L2CAPChannel * r, Queue * ifq)
+			   L2CAPChannel * r, Queue * ifq,uint8_t controllerId)
 {
     Tcl & tcl = Tcl::instance();
 
     l2cap_ = l2c;
     _psm = psm;
-
+    _controllerId = controllerId;
     _next = NULL;
     linknext = this;
     _bd_addr = -1;
@@ -371,11 +371,23 @@ void L2CAP::removeChannel(L2CAPChannel * ch)
 
 }
 
-L2CAPChannel *L2CAP::lookupChannel(uint16_t psm, bd_addr_t bd)
+/*L2CAPChannel *L2CAP::lookupChannel(uint16_t psm, bd_addr_t bd)
 {
     L2CAPChannel *wk = _chan;
     while (wk) {
 	if (wk->match(psm, bd)) {
+	    return wk;
+	}
+	wk = wk->_next;
+    }
+    return NULL;
+}*/
+
+L2CAPChannel *L2CAP::lookupChannel(uint16_t psm, bd_addr_t bd,uint8_t controllerId)
+{
+    L2CAPChannel *wk = _chan;
+    while (wk) {
+	if (wk->match(psm, bd,controllerId)) {
 	    return wk;
 	}
 	wk = wk->_next;
@@ -589,7 +601,7 @@ void L2CAP::sendUp(Packet * p, Handler * h)
     }
 }
 
-L2CAPChannel *L2CAP::L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm)
+/*L2CAPChannel *L2CAP::L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm)
 {
     L2CAPChannel *ch = lookupChannel(psm, bd_addr);
     if (ch) {
@@ -636,7 +648,57 @@ L2CAPChannel *L2CAP::L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm)
 	abort();
 	return NULL;
     }
+}*/
+
+L2CAPChannel *L2CAP::L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm,uint8_t controllerId)
+{
+    L2CAPChannel *ch = lookupChannel(psm, bd_addr,controllerId);
+    if (ch) {
+	if (!ch->failed) {
+	    return ch;
+
+	} else {		// reset this Channel
+	    ch->failed = 0;
+	    ch->ready_ = 0;
+	}
+    }
+
+    Bd_info *bd;
+    // Bd_info is kept at LMP to sumplify code.
+    // In reality, it is kept at the host.
+    if ((bd = lmp_->lookupBdinfo(bd_addr)) == NULL) {
+	bd = new Bd_info(bd_addr, 0);
+    }
+
+    ConnectionHandle *connh =
+	lmp_->HCI_Create_Connection(bd->bd_addr_, lmp_->defaultPktType_,
+				    bd->sr_, bd->page_scan_mode_, bd->offset_,
+				    lmp_->allowRS_);
+    if (connh) {
+	if (!ch) {
+	    ch = new L2CAPChannel(this, psm, connh, 0);
+	    ch->_bd_addr = bd_addr;
+	    registerChannel(ch);
+	} else {
+	    ch->_connhand = connh;
+	    connh->add_channel(ch);
+	}
+
+	connh->recv_packet_type = lmp_->defaultRecvPktType_;
+	addConnectionHandle(connh);
+	// ch->_connhand->add_channel(ch);
+	ch->_connhand->reqCid = ch;
+	if (ch->_connhand->ready_) {	// AclLink exists.
+	    connection_complete_event(ch->_connhand, 0, 1);
+	}
+	return ch;
+    } else {
+	// delete ch; // ???
+	abort();
+	return NULL;
+    }
 }
+
 
 L2CAPChannel *L2CAP::L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm,
 				     Queue * ifq)

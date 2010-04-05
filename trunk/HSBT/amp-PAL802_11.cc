@@ -228,13 +228,19 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
  void PAL802_11::Signal_MAC_Start_On_Channel(/*physical channel*/) {}
  void PAL802_11::MAC_Connect() {
 	 //This function will make the MAC send a RTS message to the peering MAC
-	 printf("Sending RTS to %i\n",((ASSOC802_11**)this->remoteAMPAssoc_)[0]->value_);
+	 printf("Sending MAC Packet to %i\n",((ASSOC802_11**)this->remoteAMPAssoc_)[0]->value_);
 	 u_int8_t* dap = ((ASSOC802_11**)this->remoteAMPAssoc_)[0]->value_;
 		Packet *p = Packet::alloc(10);
 		char *mh = (char*)p->access(hdr_mac::offset_);
 		mac_->hdr_src(mh, mac_->addr());
 		mac_->hdr_type(mh, ETHERTYPE_IP);
 		mac_->hdr_dst((char*) HDR_MAC(p), (int)dap);
+
+		hdr_pal *sh = HDR_PAL(p);
+		sh->protocol_ = Link_Supervision_Request;
+		sh->identifier_ = 1;
+		sh->Length_ = 1;
+		//send auth packet
 		Scheduler& s = Scheduler::instance();
 		// let mac decide when to take a new packet from the queue.
 		s.schedule(((Mac802_11*)mac_), p, 0);
@@ -317,6 +323,59 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 //	 }
 
  void PAL802_11::recv(Packet* p, Handler* callback = 0){
-	 printf("\n\n\nPAL802.11 has just recieved a packet from MAC 802.11\n\n\n");
+	 printf("\n\n\nPAL802.11 has just received a packet from MAC 802.11\n\n\n");
+		hdr_pal *sh = HDR_PAL(p);
+
+		char buf[1024];
+		int len = 1024;
+		uchar* req;
+
+		char *mh = (char*)p->access(hdr_mac::offset_);
+		printf("%d PAL::recv() from %d - %s packet with code %x\n", mac_->hdr_dst(mh,-2),mac_->hdr_src(mh,-2), sh->dump(buf, len), sh->protocol_);
+
+		switch (sh->protocol_) {
+		case L2CAP_DATA:
+
+			break;
+		case Link_Supervision_Request:{
+			physicalLinkState_=Connected;
+			//Send Link supervision reply
+			 printf("Sending MAC Packet to %i\n",mac_->hdr_src(mh,-2));
+				Packet *rp = Packet::alloc(10);
+				char *rmh = (char*)rp->access(hdr_mac::offset_);
+				mac_->hdr_src(rmh, mac_->hdr_dst(mh,-2));
+				mac_->hdr_type(rmh, ETHERTYPE_IP);
+				mac_->hdr_dst((char*) HDR_MAC(rp),mac_->hdr_src(mh,-2));
+
+				hdr_pal *rsh = HDR_PAL(rp);
+				rsh->protocol_ = Link_Supervision_Reply;
+				rsh->identifier_ = 1;
+				rsh->Length_ = 1;
+				//send auth packet
+				Scheduler& s = Scheduler::instance();
+				// let mac decide when to take a new packet from the queue.
+				s.schedule(((Mac802_11*)mac_), rp, 0);
+		}
+		break;
+		case Link_Supervision_Reply:
+			physicalLinkState_=Connected;
+			//notify A2MP to create the logical link
+
+			break;
+		default:
+				fprintf(stderr, "%d PAL received packed with invalid protocol %d\n",
+						mac_->hdr_dst(mh,-2), sh->protocol_);
+			}
+
+			Packet::free(p);
+
+	 // on recieving auth req packet send it up to the A2MP and send auth resp to the source
+	 // on recieving auth resp packet send it up to the A2MP
+	 //if()
+	/* if(physicalLinkState_ == Connected)
+	 		 l2cap_->recv(p,callback);
+	 else if(physicalLinkState_ == Connecting)
+		 physicalLinkState_=Connected;*/
+
 
  }
