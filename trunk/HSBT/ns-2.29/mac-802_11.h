@@ -302,9 +302,10 @@ private:
 	void		trace_pkt(Packet *p);
 	void		dump(char* fname);
 
-	inline int initialized() {	
-		return (cache_ && logtarget_
-                        && Mac::initialized());
+	inline int initialized() {
+		return (cache_ && Mac::initialized());
+		/*return (cache_ && logtarget_
+                        && Mac::initialized());*/
 	}
 
 	inline void mac_log(Packet *p) {

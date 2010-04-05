@@ -223,7 +223,7 @@ Mac802_11::Mac802_11() :
 
         EOTtarget_ = 0;
        	bss_id_ = IBSS_ID;
-	//printf("bssid in constructor %d\n",bss_id_);
+	printf("802.11 MACindex_ in constructor %d\n",index_);
 }
 
 
@@ -910,6 +910,7 @@ Mac802_11::sendCTS(int dst, double rts_duration)
 void
 Mac802_11::sendACK(int dst)
 {
+	printf("I'm node  %i\n",index_);
 	printf("Sending PAL ACK to %i\n",dst);
 	Packet *p = Packet::alloc();
 	hdr_cmn* ch = HDR_CMN(p);
@@ -1168,6 +1169,7 @@ void
 Mac802_11::recv(Packet *p, Handler *h)
 {
 	struct hdr_cmn *hdr = HDR_CMN(p);
+	printf("I'm in node %i\n",index_);
 	/*
 	 * Sanity Check
 	 */
@@ -1596,5 +1598,4 @@ Mac802_11::recvACK(Packet *p)
 
 	tx_resume();
 
-	//mac_log(p);
 }
