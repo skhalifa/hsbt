@@ -41,6 +41,7 @@
 //#include "bt-channel.h"
 #include "bt-node.h"
 #include "l2cap.h"
+#include "lmp.h"
 #include "amp-a2mp.h"
 #include "mac.h"
 #include "wireless-phy.h"
@@ -140,7 +141,6 @@ struct hdr_pal {
 };
 
 
-int hdr_pal::offset_;
 
 static class PALHeaderClass: public PacketHeaderClass {
 public:
@@ -150,9 +150,9 @@ public:
 	}
 } class_palhdr;
 
-class PAL:public BiConnector{
-    friend class BTNode;
 
+class PAL:public BiConnector{
+   // friend class BTNode;
 public:
   BTNode * btnode_;
   L2CAP * l2cap_;

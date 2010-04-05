@@ -161,13 +161,14 @@ void LMPTimer::handle(Event * e)
 //                      ConnectionHandle                //
 //////////////////////////////////////////////////////////
 
-ConnectionHandle::ConnectionHandle(uint16_t pt, uint8_t rs)
+ConnectionHandle::ConnectionHandle(uint16_t pt, uint8_t rs,uint8_t controllerId)
 :
 next(0), reqScoHand(0),
 packet_type(pt), recv_packet_type(hdr_bt::DH1),
 allow_role_switch(rs), ready_(0), link(0), chan(0),
-head(0), _last(0), numChan(0)
+head(0), _last(0), numChan(0),pal_(0),controllerId_(controllerId)
 {
+	//printf("\ncontroller Id is %i\n",controllerId_);
 }
 
 void ConnectionHandle::add_channel(L2CAPChannel * ch)

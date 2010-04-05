@@ -39,6 +39,7 @@
 #include "ip.h"
 #include "baseband.h"
 #include "lmp.h"
+//#include "amp-PAL.h"
 
 class L2CAP;
 
@@ -71,6 +72,7 @@ class L2CAPChannel {
     friend class A2MP;
     friend class BNEP;
     friend class BTNode;
+    friend class PAL;
 
   public:
     L2CAPChannel(L2CAP *, int psm, ConnectionHandle * connh,
