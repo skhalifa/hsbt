@@ -1,5 +1,6 @@
 set val(mac)            Mac/BNEP                 ;# MAC type
-set val(nn)             8                          ;# number of mobilenodes
+set val(nn)             8                        ;# number of mobilenodes
+set val(numberOfMACs)   11                        ;# total number of MACs
 set val(palType) PAL/802_11
 set val(prop)   Propagation/TwoRayGround   ;# radio-propagation model
 set val(chan)   Channel/WirelessChannel    ;# channel type
@@ -14,6 +15,7 @@ set chan [new $val(chan)];#Create wireless channel
 set topo       [new Topography]
 $topo load_flatgrid 50 50
 
+create-god $val(numberOfMACs)
 
 set f [open a2mp.tr w]
 $ns_ trace-all $f
