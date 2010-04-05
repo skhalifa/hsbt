@@ -800,6 +800,7 @@ BNEP::Connection * BNEP::connect(bd_addr_t addr, hdr_bt::packet_type pt,
 // 3. otherwise, drop it if no port is found.
 void BNEP::sendDown(Packet * p, Handler * h)
 {
+	//TODO : Do changes here to use the L2CAP over PAL instead
     int slot;
     hdr_ip *ip = HDR_IP(p);
     hdr_cmn *ch = HDR_CMN(p);

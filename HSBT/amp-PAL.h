@@ -68,6 +68,16 @@
 #define RadioHasHighCapacityLeft		0x05 //used when radio is powered up to indicate that the from 70% to 100% of bandwidth is available to be used by bluetooth
 #define RadioHasFullCapacityLeft		0x06 //used when radio is powered up to indicate that the full bandwidth is available to be used by bluetooth
 
+//==================
+//Protocol Identifiers
+//==================
+#define L2CAP_DATA					0x01
+#define Activity_Report				0x02
+#define Security_Frame				0x03
+#define Link_Supervision_Request	0x04
+#define Link_Supervision_Reply		0x05
+
+
 
 struct Version_Info{
 	u_int8_t PAL_Version;
@@ -102,6 +112,43 @@ enum PhysLinkCompleteStatus{
 	NoError=0x00,
 	LimitedResources=0x0D
 };
+
+
+struct hdr_pal {
+    uchar dsap_;// = 0xAA;
+    uchar ssap_;// = 0xAA;
+    uchar control_;// = 0x03;
+    uint32_t oui_;// = 0x001958;
+    uint16_t protocol_;
+    uint16_t identifier_;// valid values 0x01 - 0xFF
+    uint16_t Length_;
+    // length field indescates the size in octets of the data field of the packet only
+    //	Total packet size  == Length + 1 + 1 + 2;
+
+    static int offset_;
+    inline static int &offset() { return offset_; }
+    inline static hdr_pal *access(Packet * p) {
+    	return (hdr_pal *) p->access(offset_);
+    }
+
+    char *dump(char *buf, int len) {
+	snprintf(buf, len, "code:%d identifier:%d length%d",
+		 protocol_, identifier_, Length_);
+	buf[len - 1] = '\0';
+	return buf;
+    }
+};
+
+
+int hdr_pal::offset_;
+
+static class PALHeaderClass: public PacketHeaderClass {
+public:
+	PALHeaderClass() :
+		PacketHeaderClass("PacketHeader/PAL", sizeof(hdr_pal)) {
+		bind_offset(&hdr_pal::offset_);
+	}
+} class_palhdr;
 
 class PAL:public BiConnector{
     friend class BTNode;
