@@ -1255,7 +1255,7 @@ void BTNode::bnep_join(BTNode * slave, hdr_bt::packet_type pt,
 
 L2CAPChannel *BTNode::setupL2CAPChannel(ConnectionHandle * connh,
 		bd_addr_t rmt, L2CAPChannel * rcid) {
-	L2CAPChannel *ch = new L2CAPChannel(l2cap_, PSM_BNEP, connh, rcid);
+	L2CAPChannel *ch = new L2CAPChannel(l2cap_, PSM_BNEP, connh, rcid,rmt);
 	ch->_bd_addr = rmt;
 	connh->recv_packet_type = lmp_->defaultRecvPktType_;
 	l2cap_->addConnectionHandle(connh);

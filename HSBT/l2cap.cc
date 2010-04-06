@@ -83,7 +83,7 @@ static class L2CAPClass:public TclClass {
 //                      L2CAPChannel                    //
 //////////////////////////////////////////////////////////
 L2CAPChannel::L2CAPChannel(L2CAP * l2c, int psm, ConnectionHandle * connh,
-			   L2CAPChannel * r, Queue * ifq,uint8_t controllerId)
+			   L2CAPChannel * r,bd_addr_t remote_add, Queue * ifq,uint8_t controllerId)
 {
     Tcl & tcl = Tcl::instance();
 
@@ -92,7 +92,8 @@ L2CAPChannel::L2CAPChannel(L2CAP * l2c, int psm, ConnectionHandle * connh,
     _controllerId = controllerId;
     _next = NULL;
     linknext = this;
-    _bd_addr = -1;
+    //_bd_addr = -1;
+    _bd_addr = remote_add;
     _connhand = NULL;
     _nscmd = NULL;
     _qos = NULL;
@@ -200,29 +201,57 @@ void L2CAPChannel::enque(Packet * p)
 
 void L2CAPChannel::send(Packet * p)
 {
-    if (!_connhand || !_connhand->link) {
-	return;
-    }
+	if(_connhand->controllerId_ == 0){
+		if (!_connhand || !_connhand->link) {
+		return;
+		}
 
-    hdr_cmn *ch = HDR_CMN(p);
-    hdr_bt *bh = HDR_BT(p);
-    // hdr_l2cap *lh = &bh->u.l2cap;
-    hdr_l2cap *lh = &bh->l2caphdr;
+		hdr_cmn *ch = HDR_CMN(p);
+		hdr_bt *bh = HDR_BT(p);
+		// hdr_l2cap *lh = &bh->u.l2cap;
+		hdr_l2cap *lh = &bh->l2caphdr;
 
-    lh->length = ch->size();
-    ch->size() += 4;
-    bh->ph.l_ch = L_CH_L2CAP_START;
-    bh->connHand_ = _connhand;
+		lh->length = ch->size();
+		ch->size() += 4;
+		bh->ph.l_ch = L_CH_L2CAP_START;
+		bh->connHand_ = _connhand;
 
-    if (lh->cid == L2CAP_SIG_CID) {
-	bh->comment("L2");
-    } else if (lh->cid == L2CAP_BCAST_CID) {
-	bh->comment("Lb");
-    } else {
-	lh->cid = _rcid;
-	bh->comment("LD");
-    }
-    _connhand->link->enqueue(p);
+		if (lh->cid == L2CAP_SIG_CID) {
+		bh->comment("L2");
+		} else if (lh->cid == L2CAP_BCAST_CID) {
+		bh->comment("Lb");
+		} else {
+		lh->cid = _rcid;
+		bh->comment("LD");
+		}
+		_connhand->link->enqueue(p);
+	}
+	else
+	{
+		if (!_connhand || !_connhand->pal_) {
+		return;
+		}
+
+		hdr_cmn *ch = HDR_CMN(p);
+		hdr_bt *bh = HDR_BT(p);
+		// hdr_l2cap *lh = &bh->u.l2cap;
+		hdr_l2cap *lh = &bh->l2caphdr;
+
+		lh->length = ch->size();
+		ch->size() += 4;
+		bh->ph.l_ch = L_CH_L2CAP_START;
+		bh->connHand_ = _connhand;
+
+		if (lh->cid == L2CAP_SIG_CID) {
+		bh->comment("L2");
+		} else if (lh->cid == L2CAP_BCAST_CID) {
+		bh->comment("Lb");
+		} else {
+		lh->cid = _rcid;
+		bh->comment("LD");
+		}
+		_connhand->pal_->sendDown(p);
+	}
 }
 
 void L2CAPChannel::linkDetached()
@@ -250,7 +279,7 @@ L2CAP::L2CAP()
     ifq_ = L2CAP_IFQ;
     ifq_limit_ = L2CAP_IFQ_LIMIT;
 
-    bcastCid = new L2CAPChannel(this, 0, 0, 0);
+    bcastCid = new L2CAPChannel(this, 0, 0, 0,-1);
     // bcastCid->cid = L2CAP_BCAST_CID;
 
     trace_me_l2cap_cmd_ = 0;
@@ -321,11 +350,17 @@ void L2CAP::l2capCommand(uchar code, uchar * content, int len,
     // LMPLink directly
     connh->chan->send(p);
 
-    if ((trace_all_l2cap_cmd_ || trace_me_l2cap_cmd_) && connh && connh->link) {
+    //TODO : the following condition will always fail with AMP as connh->link == null
+ /*   if ((trace_all_l2cap_cmd_ || trace_me_l2cap_cmd_) && connh && connh->link) {
 	fprintf(BtStat::log_, L2CAPPREFIX0 "%d->%d %f %s\n",
 		bd_addr_, connh->link->remote->bd_addr_,
 		Scheduler::instance().clock(), opcode_str(cmd->code));
-    }
+    }*/
+    if ((trace_all_l2cap_cmd_ || trace_me_l2cap_cmd_) && connh ) {
+ 	fprintf(BtStat::log_, L2CAPPREFIX0 "%d->%d %f %s\n",
+ 		bd_addr_, connh->chan->_bd_addr,
+ 		Scheduler::instance().clock(), opcode_str(cmd->code));
+     }
 
 }
 
@@ -677,7 +712,7 @@ L2CAPChannel *L2CAP::L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm,uint8_t con
 						lmp_->allowRS_);
 		if (connh) {
 		if (!ch) {
-			ch = new L2CAPChannel(this, psm, connh, 0);
+			ch = new L2CAPChannel(this, psm, connh, 0,bd_addr);
 			ch->_bd_addr = bd_addr;
 			registerChannel(ch);
 		} else {
@@ -713,7 +748,7 @@ L2CAPChannel *L2CAP::L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm,uint8_t con
 
 		if (connh) {
 		if (!ch) {
-			ch = new L2CAPChannel(this, psm, connh, 0);
+			ch = new L2CAPChannel(this, psm, connh, 0,bd_addr);
 			ch->_bd_addr = bd_addr;
 			registerChannel(ch);
 		} else {
@@ -742,7 +777,7 @@ L2CAPChannel *L2CAP::L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm,
 				     Queue * ifq)
 {
     if (ifq) {
-	L2CAPChannel *ch = new L2CAPChannel(this, psm, 0, 0, ifq);
+	L2CAPChannel *ch = new L2CAPChannel(this, psm, 0, 0,bd_addr, ifq);
 	ch->failed = 1;		// Sorry for possible misleading.
 	ch->_bd_addr = bd_addr;
 	registerChannel(ch);
@@ -806,7 +841,7 @@ void L2CAP::connection_ind(ConnectionHandle * connh)
 {
     // PSM is set to 0 temporarily.  Probably should set to 0x01 instead.
     // Well. Channel with PSM 0x01 does always implicitly exist.
-    L2CAPChannel *ch = new L2CAPChannel(this, 0, connh, NULL);
+    L2CAPChannel *ch = new L2CAPChannel(this, 0, connh, NULL,-1);
     addConnectionHandle(connh);
     registerChannel(ch);
 }
@@ -823,9 +858,9 @@ int L2CAP::L2CA_ConnectRsp(ConnectionHandle * connh,
     if (!connh->chan->ready_) {
 	lcid = connh->chan;
 
-	// Multiple Channel on a sigle ConnHand.
+	// Multiple Channel on a single ConnHand.
     } else {
-	lcid = new L2CAPChannel(this, 0, connh, NULL);
+	lcid = new L2CAPChannel(this, 0, connh, NULL,connh->chan->_bd_addr);
 	registerChannel(lcid);
     }
 

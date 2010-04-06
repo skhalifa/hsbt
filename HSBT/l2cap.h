@@ -76,7 +76,7 @@ class L2CAPChannel {
 
   public:
     L2CAPChannel(L2CAP *, int psm, ConnectionHandle * connh,
-		  L2CAPChannel * r, Queue *ifq = 0,uint8_t controllerId = 0);
+		  L2CAPChannel * r, bd_addr_t remote_add=-1,Queue *ifq = 0,uint8_t controllerId = 0);
 /*
     inline bool match(int psm, bd_addr_t addr) {
 	return (_psm == psm) && (_bd_addr == addr);

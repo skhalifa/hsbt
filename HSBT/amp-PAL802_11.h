@@ -165,6 +165,7 @@ public:
 protected:
 		//send packet to the L2CAP
 	    void sendUp(Packet *, Handler *);
+	    void sendDown(Packet *);
 	    int command(int argc, const char*const* argv);
 
 public:
