@@ -167,12 +167,12 @@ public:
   //bd_addr_t ad; //use mac.addr() instead
   u_int8_t* remoteAMPAssoc_;
 
-protected:
-	//send packet to the L2CAP
-    virtual void sendUp(Packet *, Handler *)=0;
-    virtual int command(int argc, const char*const* argv)=0;
-public:
 
+public:
+	//send packet to the L2CAP
+  virtual void sendUp(Packet *, Handler *)=0;
+  virtual void sendDown(Packet *)=0;
+  virtual int command(int argc, const char*const* argv)=0;
 
     virtual void on()  = 0;//fixme : see if they can be written once for all PALs
     virtual void _init() = 0;//fixme : see if they can be written once for all PALs

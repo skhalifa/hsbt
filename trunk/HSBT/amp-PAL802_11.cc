@@ -106,6 +106,28 @@ void PAL802_11::sendUp(Packet *p, Handler *h){
 
 }
 
+void PAL802_11::sendDown(Packet *p){
+	if(physicalLinkState_ == Connected){
+	 printf("Sending MAC Packet to %i\n",((ASSOC802_11**)this->remoteAMPAssoc_)[0]->value_);
+	 u_int8_t* dap = ((ASSOC802_11**)this->remoteAMPAssoc_)[0]->value_;
+		char *mh = (char*)p->access(hdr_mac::offset_);
+		mac_->hdr_src(mh, mac_->addr());
+		mac_->hdr_type(mh, ETHERTYPE_IP);
+		//TODO : need fixing
+		mac_->hdr_dst((char*) HDR_MAC(p), (int)dap);
+
+		hdr_pal *sh = HDR_PAL(p);
+		sh->protocol_ = L2CAP_DATA;
+		//FIXME : check the need for the identifier and length in the pal header
+		sh->identifier_ = 1;
+		sh->Length_ = sizeof(p);
+		//send auth packet
+		Scheduler& s = Scheduler::instance();
+		// let mac decide when to take a new packet from the queue.
+		s.schedule(((Mac802_11*)mac_), p, 0);
+	}
+
+}
 Version_Info* PAL802_11::HCI_Read_Local_Version_Info(){
 	return new Version_Info(PAL_Version_,PAL_Company_Identifier_,PAL_Sub_version_);
 }
