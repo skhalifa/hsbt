@@ -98,7 +98,7 @@ void PAL802_11::_init(){
 	controllerID_ = Controller_ID_;
 	controllerType_ = Controller_Type_;
 	controllerStatus_ = RadioHasHighCapacityLeft;
-	physicalLinkState_ = Disconnected;
+	//physicalLinkState_ = Disconnected;
 	printf("PAL INIT BW = %i\n",Max_Guaranteed_Bandwidth_);
 }
 
@@ -106,14 +106,15 @@ void PAL802_11::sendUp(Packet *p, Handler *h){
 
 }
 
-void PAL802_11::sendDown(Packet *p){
-	if(physicalLinkState_ == Connected){
-	 printf("Sending MAC Packet to %i\n",((ASSOC802_11**)this->remoteAMPAssoc_)[0]->value_);
-	 u_int8_t* dap = ((ASSOC802_11**)this->remoteAMPAssoc_)[0]->value_;
+void PAL802_11::sendDown(AMPConnection* conn,Packet *p){
+	if(conn->physicalLinkState_ == Connected){
+	 printf("Sending MAC Packet to %i\n",((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_);
+	 printf("Sending MAC Packet to using daddr_%i\n",conn->daddr_);
+	 u_int8_t* dap = ((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_;
 		char *mh = (char*)p->access(hdr_mac::offset_);
 		mac_->hdr_src(mh, mac_->addr());
 		mac_->hdr_type(mh, ETHERTYPE_IP);
-		//TODO : need fixing
+		//TODO : Try using conn->daddr_
 		mac_->hdr_dst((char*) HDR_MAC(p), (int)dap);
 
 		hdr_pal *sh = HDR_PAL(p);
@@ -152,8 +153,9 @@ u_int8_t* PAL802_11::HCI_Read_Local_AMP_Assoc()
 	return (u_int8_t*)assoc;
 }
 
-void PAL802_11::HCI_Write_Remote_AMP_Assoc(u_int8_t* ampAssoc){
-	this->remoteAMPAssoc_ = ampAssoc;
+void PAL802_11::HCI_Write_Remote_AMP_Assoc(AMPConnection* conn,u_int8_t* ampAssoc){
+	conn->remoteAMPAssoc_ = ampAssoc;
+
 }
 void PAL802_11::HCI_Reset(){
 	//TODO: destroy all existing AMP Physical links
@@ -185,7 +187,7 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 //Physical Link Manager functions
 //Implements operations on physical link includes physical link creation/acceptance/deletion plus channel selection
 //, security establishment and maintenance
- PhysLinkCompleteStatus PAL802_11::HCI_Create_Physical_Link(u_int8_t* remote_amp_assoc){
+ PhysLinkCompleteStatus PAL802_11::HCI_Create_Physical_Link(AMPConnection* conn){
 	 /*
 	  * 1) Determine the selected channel
 	  * (if MAC not in selected channel)
@@ -212,37 +214,37 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 		printf("Dest connected channel : %i\n",assoc[3]->value_);
 		printf("Dest PAL version : %i\n",((Version_Info*)assoc[4]->value_)->PAL_Version);
 		*/
-	 physicalLinkState_ = Starting;
+	 conn->physicalLinkState_ = Starting;
 	 if(!netif_->Is_node_on())
 	 {
 		 netif_->node_on();
 	 }
 	 if(netif_->Is_node_on())
 	 {
-		 physicalLinkState_ = Connecting;
+		 conn->physicalLinkState_ = Connecting;
 		 return NoError;
 	 }
 	 else
 	 {
-		 physicalLinkState_ = Disconnected;
+		 conn->physicalLinkState_ = Disconnected;
 		 return LimitedResources;
 	 }
 
  }
- PhysLinkCompleteStatus PAL802_11::HCI_Accept_Physical_Link(u_int8_t* remote_amp_assoc){
-	 physicalLinkState_ = Starting;
+ PhysLinkCompleteStatus PAL802_11::HCI_Accept_Physical_Link(AMPConnection* conn){
+	 conn->physicalLinkState_ = Starting;
 	 if(!netif_->Is_node_on())
 	 {
 		 netif_->node_on();
 	 }
 	 if(netif_->Is_node_on())
 	 {
-		 physicalLinkState_ = Connecting;
+		 conn->physicalLinkState_ = Connecting;
 		 return NoError;
 	 }
 	 else
 	 {
-		 physicalLinkState_ = Disconnected;
+		 conn->physicalLinkState_ = Disconnected;
 		 return LimitedResources;
 	 }
 
@@ -253,10 +255,10 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 //Actions
  void PAL802_11::Determine_Selected_Channel() {}
  void PAL802_11::Signal_MAC_Start_On_Channel(/*physical channel*/) {}
- void PAL802_11::MAC_Connect() {
+ void PAL802_11::MAC_Connect(AMPConnection* conn) {
 	 //This function will make the MAC send a RTS message to the peering MAC
-	 printf("Sending MAC Packet to %i\n",((ASSOC802_11**)this->remoteAMPAssoc_)[0]->value_);
-	 u_int8_t* dap = ((ASSOC802_11**)this->remoteAMPAssoc_)[0]->value_;
+	 printf("Sending MAC Packet to %i\n",((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_);
+	 u_int8_t* dap = ((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_;
 		Packet *p = Packet::alloc(10);
 		char *mh = (char*)p->access(hdr_mac::offset_);
 		mac_->hdr_src(mh, mac_->addr());
@@ -362,10 +364,11 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 
 		switch (sh->protocol_) {
 		case L2CAP_DATA:
-
+				l2cap_->sendUp(p,callback);
 			break;
 		case Link_Supervision_Request:{
-			physicalLinkState_=Connected;
+			AMPConnection* conn = a2mp_->lookupConnection(mac_->hdr_src(mh,-2));
+			conn->physicalLinkState_=Connected;
 			//Send Link supervision reply
 			 printf("Sending MAC Packet to %i\n",mac_->hdr_src(mh,-2));
 				Packet *rp = Packet::alloc(10);
@@ -384,10 +387,11 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 				s.schedule(((Mac802_11*)mac_), rp, 0);
 		}
 		break;
-		case Link_Supervision_Reply:
-			physicalLinkState_=Connected;
+		case Link_Supervision_Reply:{
+			AMPConnection* conn = a2mp_->lookupConnection(mac_->hdr_src(mh,-2));
+			conn->physicalLinkState_=Connected;
 			//notify A2MP to create the logical link
-
+		}
 			break;
 		default:
 				fprintf(stderr, "%d PAL received packed with invalid protocol %d\n",

@@ -589,10 +589,10 @@ int BNEP::findPort(int macDA)
     }
 }
 
-BNEP::Connection * BNEP::lookupConnection(bd_addr_t addr)
+BNEP::Connection * BNEP::lookupConnection(bd_addr_t addr,bool highSpeed)
 {
     for (int i = 0; i < num_conn_max; i++) {
-	if (_conn[i] && _conn[i]->daddr == addr) {
+	if (_conn[i] && _conn[i]->daddr == addr && _conn[i]->cid->highSpeed_ == highSpeed) {
 	    return _conn[i];
 	}
     }
@@ -609,10 +609,10 @@ BNEP::Connection * BNEP::lookupConnection(L2CAPChannel * ch)
     return NULL;
 }
 
-L2CAPChannel *BNEP::lookupChannel(bd_addr_t addr)
+L2CAPChannel *BNEP::lookupChannel(bd_addr_t addr,bool highSpeed)
 {
     for (int i = 0; i < num_conn_max; i++) {
-	if (_conn[i] && _conn[i]->cid->remote() == addr) {
+	if (_conn[i] && _conn[i]->cid->remote() == addr &&  _conn[i]->cid->highSpeed_ == highSpeed) {
 	    return _conn[i]->cid;
 	}
     }
@@ -752,10 +752,11 @@ void BNEP::disconnect(bd_addr_t addr, uchar reason)
 }
 
 BNEP::Connection * BNEP::connect(bd_addr_t addr, hdr_bt::packet_type pt,
-				 hdr_bt::packet_type rpt, Queue * ifq)
+				 hdr_bt::packet_type rpt, Queue * ifq,bool highSpeed)
 {
+	printf("bnep high speed %i/n",highSpeed);
     Connection *c;
-    if ((c = lookupConnection(addr))) {
+    if ((c = lookupConnection(addr,highSpeed))) {
 	return c;
     }
 #if 0
@@ -771,7 +772,7 @@ BNEP::Connection * BNEP::connect(bd_addr_t addr, hdr_bt::packet_type pt,
     // is established. The simulator returns as long as Page request
     // is queued.  So, we have a flag in Connection to indicate if the
     // underlying L2CAP Channel setup is completed.
-    L2CAPChannel *ch = l2cap_->L2CA_ConnectReq(addr, PSM_BNEP, ifq);
+    L2CAPChannel *ch = l2cap_->L2CA_ConnectReq(addr, PSM_BNEP, ifq,highSpeed);
 
     if (pt < hdr_bt::NotSpecified) {	// try to change pktType
 	ch->changePktType(pt);

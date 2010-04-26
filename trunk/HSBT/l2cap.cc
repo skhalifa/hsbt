@@ -83,13 +83,13 @@ static class L2CAPClass:public TclClass {
 //                      L2CAPChannel                    //
 //////////////////////////////////////////////////////////
 L2CAPChannel::L2CAPChannel(L2CAP * l2c, int psm, ConnectionHandle * connh,
-			   L2CAPChannel * r,bd_addr_t remote_add, Queue * ifq,uint8_t controllerId)
+			   L2CAPChannel * r,bd_addr_t remote_add, Queue * ifq,bool highSpeed)
 {
     Tcl & tcl = Tcl::instance();
 
     l2cap_ = l2c;
     _psm = psm;
-    _controllerId = controllerId;
+    highSpeed_ = highSpeed;
     _next = NULL;
     linknext = this;
     //_bd_addr = -1;
@@ -176,13 +176,25 @@ void L2CAPChannel::changeRecvPktType(hdr_bt::packet_type pt)
 
 void L2CAPChannel::send()
 {
-    if (!ready_ || _connhand->link->suspended || _connhand->link->_parked) {
-	return;
-    }
-    Packet *p = _queue->deque();
-    if (p) {
-	send(p);
-    }
+	if(!_connhand->highSpeed_){
+		if (!ready_ || _connhand->link->suspended || _connhand->link->_parked) {
+		return;
+		}
+		Packet *p = _queue->deque();
+		if (p) {
+		send(p);
+		}
+	}
+	else
+	{
+		if (!ready_ || _connhand->ampConnection_->physicalLinkState_ != Connected) {
+			return;
+		    }
+		    Packet *p = _queue->deque();
+		    if (p) {
+			send(p);
+		    }
+	}
 }
 
 void L2CAPChannel::flush()
@@ -201,7 +213,7 @@ void L2CAPChannel::enque(Packet * p)
 
 void L2CAPChannel::send(Packet * p)
 {
-	if(_connhand->controllerId_ == 0){
+	if(!_connhand->highSpeed_ ){
 		if (!_connhand || !_connhand->link) {
 		return;
 		}
@@ -228,7 +240,7 @@ void L2CAPChannel::send(Packet * p)
 	}
 	else
 	{
-		if (!_connhand || !_connhand->pal_) {
+		if (!_connhand || !_connhand->ampConnection_) {
 		return;
 		}
 
@@ -250,7 +262,9 @@ void L2CAPChannel::send(Packet * p)
 		lh->cid = _rcid;
 		bh->comment("LD");
 		}
-		_connhand->pal_->sendDown(p);
+		//send the packet down to the PAL using the A2MP connection
+		l2cap_->a2mp_->pal_[_connhand->ampConnection_->localPalID_]->sendDown(_connhand->ampConnection_,p);
+
 	}
 }
 
@@ -418,11 +432,11 @@ void L2CAP::removeChannel(L2CAPChannel * ch)
     return NULL;
 }*/
 
-L2CAPChannel *L2CAP::lookupChannel(uint16_t psm, bd_addr_t bd,uint8_t controllerId)
+L2CAPChannel *L2CAP::lookupChannel(uint16_t psm, bd_addr_t bd,bool highSpeed)
 {
     L2CAPChannel *wk = _chan;
     while (wk) {
-	if (wk->match(psm, bd,controllerId)) {
+	if (wk->match(psm, bd,highSpeed)) {
 	    return wk;
 	}
 	wk = wk->_next;
@@ -685,9 +699,10 @@ void L2CAP::sendUp(Packet * p, Handler * h)
     }
 }*/
 
-L2CAPChannel *L2CAP::L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm,uint8_t controllerId)
+L2CAPChannel *L2CAP::L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm,bool highSpeed)
 {
-    L2CAPChannel *ch = lookupChannel(psm, bd_addr,controllerId);
+	printf("highspeed %i\n",highSpeed);
+    L2CAPChannel *ch = lookupChannel(psm, bd_addr,highSpeed);
     if (ch) {
 	if (!ch->failed) {
 	    return ch;
@@ -698,7 +713,7 @@ L2CAPChannel *L2CAP::L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm,uint8_t con
 	}
     }
 
-    if(controllerId == 0){
+    if(!highSpeed){
 		Bd_info *bd;
 		// Bd_info is kept at LMP to simplify code.
 		// In reality, it is kept at the host.
@@ -736,19 +751,23 @@ L2CAPChannel *L2CAP::L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm,uint8_t con
     }
     else
     {
-		Bd_info *bd;
-		// Bd_info is kept at LMP to simplify code.
-		// In reality, it is kept at the host.
-		if ((bd = lmp_->lookupBdinfo(bd_addr)) == NULL) {
-		bd = new Bd_info(bd_addr, 0);
+    	//Start AMP discovery
+    	printf("L2CAP :: Discoverreq Connect to %i\n",bd_addr);
+    	a2mp_->A2MP_DiscoverReq(bd_addr);
+    	//FixME (May be needed): wait till devices are associated
+    	AMPConnection* conn = a2mp_->lookupConnection(bd_addr);
+		if(conn == NULL)
+		{
+			printf("Error No connection found to %i\n",bd_addr);
+			return NULL;
 		}
-
-		ConnectionHandle *connh =  new ConnectionHandle(lmp_->defaultPktType_,1,controllerId);
-		connh->setPAL(a2mp_->pal_[controllerId]);
+		ConnectionHandle *connh =  new ConnectionHandle(lmp_->defaultPktType_,1,highSpeed);
+		//connh->setPAL(a2mp_->pal_[controllerId]);
+		connh->setAMPConnection(conn);
 
 		if (connh) {
 		if (!ch) {
-			ch = new L2CAPChannel(this, psm, connh, 0,bd_addr);
+			ch = new L2CAPChannel(this, psm, connh, 0,bd_addr,0,highSpeed);
 			ch->_bd_addr = bd_addr;
 			registerChannel(ch);
 		} else {
@@ -774,15 +793,15 @@ L2CAPChannel *L2CAP::L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm,uint8_t con
 
 
 L2CAPChannel *L2CAP::L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm,
-				     Queue * ifq)
+				     Queue * ifq,bool highSpeed)
 {
     if (ifq) {
-	L2CAPChannel *ch = new L2CAPChannel(this, psm, 0, 0,bd_addr, ifq);
+	L2CAPChannel *ch = new L2CAPChannel(this, psm, 0, 0,bd_addr, ifq,highSpeed);
 	ch->failed = 1;		// Sorry for possible misleading.
 	ch->_bd_addr = bd_addr;
 	registerChannel(ch);
     }
-    return L2CA_ConnectReq(bd_addr, psm);
+    return L2CA_ConnectReq(bd_addr, psm,highSpeed);
 }
 
 int L2CAP::connection_complete_event(ConnectionHandle * connh,

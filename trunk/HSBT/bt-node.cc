@@ -310,12 +310,16 @@ int BTNode::command(int argc, const char * const *argv) {
 
 		if (!strcmp(argv[1], "make-hs-connection")) {
 			BTNode *dest = (BTNode *) TclObject::lookup(argv[2]);
-			printf("sending req to %i\n",dest->bb_->bd_addr_);
-			a2mp_->A2MP_DiscoverReq(dest->bb_->bd_addr_);
-			A2MP::Connection* c = a2mp_->lookupConnection(dest->bb_->bd_addr_);
-			c->discoveryOnly_ = false;
-			//tcl.result(conn->cid->_queue->name());
+//			a2mp_->A2MP_DiscoverReq(dest->bb_->bd_addr_);
+			BNEP::Connection * conn = bnep_->connect(dest->bb_->bd_addr_,true);
+			tcl.result(conn->cid->_queue->name());
 			return (TCL_OK);
+//			BTNode *dest = (BTNode *) TclObject::lookup(argv[2]);
+//			printf("sending req to %i\n",dest->bb_->bd_addr_);
+//			a2mp_->A2MP_DiscoverReq(dest->bb_->bd_addr_);
+//			AMPConnection* c = a2mp_->lookupConnection(dest->bb_->bd_addr_);
+//			c->discoveryOnly_ = false;
+//			return (TCL_OK);
 
 		} else if (!strcmp(argv[1], "drop-hs-connection")) {
 			BTNode *dest = (BTNode *) TclObject::lookup(argv[2]);
