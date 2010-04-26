@@ -134,14 +134,7 @@
 
 	};
 
-	enum PhysicalLinkStates{
-		Disconnected=0,
-		Starting=1,
-		Connecting=2,
-		Disconnecting=3,
-		Authenticating=4,
-		Connected=5
-	};
+
 
 	enum LogicalLinkStatus{
 		Command_Disallowed=0x0C,
@@ -150,7 +143,7 @@
 
 class L2CAPChannel;
 class ConnectionHandle;
-
+class AMPConnection;
 
 class PAL802_11:public PAL {
     friend class BTNode;
@@ -160,23 +153,23 @@ public:
   u_int32_t Min_Latencay_;//value = mac DIFS + CWmin //for now assign 50microsecond //latency unit is microseconds(4octets)
   u_int32_t Max_PDU_Size_;// in octets largest allowed L2CAP PDU size//2312//
   u_int16_t AMP_ASSOC_Length_;//max size in octets of the requested AMP Assoc Structure(2octets)
-  PhysicalLinkStates physicalLinkState_;
 
-protected:
-		//send packet to the L2CAP
-	    void sendUp(Packet *, Handler *);
-	    void sendDown(Packet *);
-	    int command(int argc, const char*const* argv);
+
 
 public:
     PAL802_11();
+
+	//send packet to the L2CAP
+    void sendUp(Packet *, Handler *);
+    void sendDown(AMPConnection*,Packet *);
+    int command(int argc, const char*const* argv);
 
     void on();//fixme : see if they can be written once for all PALs
     void _init();
     Version_Info* HCI_Read_Local_Version_Info();
     AMP_Info* HCI_Read_Local_AMP_Info();
     u_int8_t* HCI_Read_Local_AMP_Assoc();
-    void HCI_Write_Remote_AMP_Assoc(u_int8_t*);
+    void HCI_Write_Remote_AMP_Assoc(AMPConnection*,u_int8_t*);
     void HCI_Reset();
     int HCI_Read_Failed_Contact_Counter();
     u_int8_t HCI_Read_Link_Quality();
@@ -196,14 +189,14 @@ public:
     //Physical Link Manager functions
     //Implements operations on physical link includes physical link creation/acceptance/deletion plus channel selection
     //, security establishment and maintenance
-     PhysLinkCompleteStatus HCI_Create_Physical_Link(u_int8_t*);
-     PhysLinkCompleteStatus HCI_Accept_Physical_Link(u_int8_t*);
+     PhysLinkCompleteStatus HCI_Create_Physical_Link(AMPConnection*);
+     PhysLinkCompleteStatus HCI_Accept_Physical_Link(AMPConnection*);
      void HCI_Disconnect_Physical_Link();
 
     //Actions
      void Determine_Selected_Channel() ;
      void Signal_MAC_Start_On_Channel(/*physical channel*/) ;
-     void MAC_Connect(/*physical channel*/) ;
+     void MAC_Connect(AMPConnection*) ;
      void MAC_Initiate_Handshake(/*physical channel*/) ;
      void Cancel_MAC_Connect_Operation(/*physical channel*/) ;
      void Signal_MAC_Start_To_Disconnect(/*physical channel*/) ;

@@ -161,12 +161,12 @@ void LMPTimer::handle(Event * e)
 //                      ConnectionHandle                //
 //////////////////////////////////////////////////////////
 
-ConnectionHandle::ConnectionHandle(uint16_t pt, uint8_t rs,uint8_t controllerId)
+ConnectionHandle::ConnectionHandle(uint16_t pt, uint8_t rs,bool highSpeed)
 :
 next(0), reqScoHand(0),
 packet_type(pt), recv_packet_type(hdr_bt::DH1),
 allow_role_switch(rs), ready_(0), link(0), chan(0),
-head(0), _last(0), numChan(0),pal_(0),controllerId_(controllerId)
+head(0), _last(0), numChan(0),ampConnection_(0),highSpeed_(highSpeed)
 {
 	//printf("\ncontroller Id is %i\n",controllerId_);
 }

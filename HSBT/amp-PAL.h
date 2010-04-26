@@ -44,7 +44,7 @@
 #include "lmp.h"
 #include "amp-a2mp.h"
 #include "mac.h"
-#include "wireless-phy.h"
+//#include "wireless-phy.h"
 
 //==================
 //Controller IDs
@@ -141,7 +141,6 @@ struct hdr_pal {
 };
 
 
-
 static class PALHeaderClass: public PacketHeaderClass {
 public:
 	PALHeaderClass() :
@@ -150,7 +149,8 @@ public:
 	}
 } class_palhdr;
 
-
+class AMPConnection;
+//class WirelessPhy;
 class PAL:public BiConnector{
    // friend class BTNode;
 public:
@@ -158,20 +158,21 @@ public:
   L2CAP * l2cap_;
   A2MP *a2mp_;
   Mac * mac_;
-  WirelessPhy* netif_;
+  class WirelessPhy* netif_;
   u_int8_t controllerID_;
   u_int8_t controllerType_;
   u_int8_t controllerStatus_;
   //Bd_info *_my_info;	//fixme : what to do with it??
   //Bd_info *_bd;		// bt device database //fixme : what to do with it??
   //bd_addr_t ad; //use mac.addr() instead
-  u_int8_t* remoteAMPAssoc_;
+  // u_int8_t* remoteAMPAssoc_; //moved to the A2MP::Connection
+  //PhysicalLinkStates physicalLinkState_; //moved to the A2MP::Connection
 
 
 public:
 	//send packet to the L2CAP
   virtual void sendUp(Packet *, Handler *)=0;
-  virtual void sendDown(Packet *)=0;
+  virtual void sendDown(AMPConnection*,Packet *)=0;
   virtual int command(int argc, const char*const* argv)=0;
 
     virtual void on()  = 0;//fixme : see if they can be written once for all PALs
@@ -188,7 +189,7 @@ public:
     virtual Version_Info* HCI_Read_Local_Version_Info()= 0;
     virtual AMP_Info* HCI_Read_Local_AMP_Info()= 0;
     virtual u_int8_t* HCI_Read_Local_AMP_Assoc()= 0;
-    virtual void HCI_Write_Remote_AMP_Assoc(u_int8_t*)= 0;
+    virtual void HCI_Write_Remote_AMP_Assoc(AMPConnection*,u_int8_t*)= 0;
     virtual void HCI_Reset()= 0;
     virtual int HCI_Read_Failed_Contact_Counter(/*logical link*/)= 0;
     virtual u_int8_t HCI_Read_Link_Quality()= 0;
@@ -206,14 +207,14 @@ public:
     //Physical Link Manager functions
     //Implements operations on physical link includes physical link creation/acceptance/deletion plus channel selection
     //, security establishment and maintenance
-    virtual PhysLinkCompleteStatus HCI_Create_Physical_Link(u_int8_t*)= 0;
-    virtual PhysLinkCompleteStatus HCI_Accept_Physical_Link(u_int8_t*)= 0;
+    virtual PhysLinkCompleteStatus HCI_Create_Physical_Link(AMPConnection*)= 0;
+    virtual PhysLinkCompleteStatus HCI_Accept_Physical_Link(AMPConnection*)= 0;
     virtual void HCI_Disconnect_Physical_Link()= 0;
 
     //Actions
     virtual void Determine_Selected_Channel() =0;
     virtual void Signal_MAC_Start_On_Channel(/*physical channel*/) =0;
-    virtual void MAC_Connect(/*physical channel*/) =0;
+    virtual void MAC_Connect(AMPConnection*) =0;
     virtual void MAC_Initiate_Handshake(/*physical channel*/) =0;
     virtual void Cancel_MAC_Connect_Operation(/*physical channel*/) =0;
     virtual void Signal_MAC_Start_To_Disconnect(/*physical channel*/) =0;
@@ -228,10 +229,8 @@ public:
     virtual void Encapsulate_Packet() =0;
     virtual void recv(Packet*, Handler* callback = 0) = 0;
 
-    //virtual uchar* HCI_Read_Local_AMP_Assoc()= 0;
-    //virtual uchar* HCI_Write_Remote_AMP_Assoc()= 0;
+
 
 };
-
 
 #endif				// __ns_amp_PAL_h__

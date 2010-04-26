@@ -39,8 +39,10 @@
 #include "ip.h"
 #include "baseband.h"
 #include "lmp.h"
+//#include "amp-a2mp.h"
 //#include "amp-PAL.h"
 
+class Connection;
 class L2CAP;
 
 /* 
@@ -72,18 +74,17 @@ class L2CAPChannel {
     friend class A2MP;
     friend class BNEP;
     friend class BTNode;
-    friend class PAL;
 
   public:
     L2CAPChannel(L2CAP *, int psm, ConnectionHandle * connh,
-		  L2CAPChannel * r, bd_addr_t remote_add=-1,Queue *ifq = 0,uint8_t controllerId = 0);
+		  L2CAPChannel * r, bd_addr_t remote_add=-1,Queue *ifq = 0,bool highSpeed=false);
 /*
     inline bool match(int psm, bd_addr_t addr) {
 	return (_psm == psm) && (_bd_addr == addr);
     } */
 
-    inline bool match(int psm, bd_addr_t addr,uint8_t controllerId=0) {
- 	return (_psm == psm) && (_bd_addr == addr)  && (_controllerId == controllerId) ;
+    inline bool match(int psm, bd_addr_t addr,bool highSpeed = false) {
+ 	return (_psm == psm) && (_bd_addr == addr)  && (highSpeed_ == highSpeed) ;
      }
 
     void enque(Packet * p);
@@ -91,7 +92,7 @@ class L2CAPChannel {
     void send(Packet * p);
 
     inline uint16_t psm() { return _psm; }
-    inline uint8_t controllerId() { return _controllerId; }
+    inline bd_addr_t address() { return _bd_addr; }
     inline L2CAPChannel *rcid() { return _rcid; }
     inline L2CAPChannel *next() { return _next; }
     inline void next(L2CAPChannel * n) { _next = n; }
@@ -116,6 +117,7 @@ class L2CAPChannel {
     ConnectionHandle *_connhand;
     int ready_;
     uchar disconnReason;
+    bool highSpeed_;
 
   private:
     L2CAP * l2cap_;
@@ -125,7 +127,6 @@ class L2CAPChannel {
     // int cid;
     int _psm;
     bd_addr_t _bd_addr;
-    uint8_t _controllerId;
     const char *_nscmd;
     QosParam *_qos;
     QosParam *_qosReq;
@@ -217,15 +218,15 @@ class L2CAP:public BiConnector {
     void addConnectionHandle(ConnectionHandle *);
     void removeConnectionHandle(ConnectionHandle *);
     //L2CAPChannel *lookupChannel(uint16_t psm, bd_addr_t bd);
-    L2CAPChannel *lookupChannel(uint16_t psm, bd_addr_t bd,uint8_t controllerId=0);
+    L2CAPChannel *lookupChannel(uint16_t psm, bd_addr_t bd,bool highSpeed = false);
     int connection_complete_event(ConnectionHandle *, int type,
 				  int status);
     void connection_ind(ConnectionHandle *);
     void _channel_setup_complete(L2CAPChannel *);
 
     //L2CAPChannel *L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm = 0);
-    L2CAPChannel *L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm = 0,uint8_t controllerId=0);
-    L2CAPChannel *L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm, Queue *ifq);
+    L2CAPChannel *L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm = 0,bool highSpeed = false);
+    L2CAPChannel *L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm, Queue *ifq,bool highSpeed = false);
     int L2CA_ConnectRsp(ConnectionHandle *connh, ConnReq *connreq);
     int L2CA_DisconnectReq(L2CAPChannel * dcid, L2CAPChannel *scid);
     int L2CA_DisconnectRsp(ConnectionHandle * connh, ConnResp * req);

@@ -423,14 +423,17 @@ class BNEP:public Mac {
     int findPort(int macDA);
     int findPortByIp(int ip);
     void portLearning(int, Packet *);
+    inline Connection *connect(bd_addr_t addr,bool highSpeed){
+    	return connect(addr,hdr_bt::NotSpecified,hdr_bt::NotSpecified,0,highSpeed);
+    }
     Connection *connect(bd_addr_t addr,
 			hdr_bt::packet_type pt = hdr_bt::NotSpecified,
 			hdr_bt::packet_type rpt = hdr_bt::NotSpecified,
-			Queue * ifq = 0);
+			Queue * ifq = 0,bool highSpeed = false);
     void disconnect(bd_addr_t addr, uchar reason);
-    Connection *lookupConnection(bd_addr_t addr);
+    Connection *lookupConnection(bd_addr_t addr,bool highSpeed =false);
     Connection *lookupConnection(L2CAPChannel *);
-    L2CAPChannel *lookupChannel(bd_addr_t addr);
+    L2CAPChannel *lookupChannel(bd_addr_t addr,bool highSpeed = false);
     Connection *addConnection(L2CAPChannel *);
     void removeConnection(Connection *);
     void removeConnection(L2CAPChannel * ch);

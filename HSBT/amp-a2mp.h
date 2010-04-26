@@ -223,7 +223,7 @@ struct hdr_a2mp {
 };
 
 
-//class A2MP;
+class A2MP;
 
 class A2MPTimer:public Handler {
   public:
@@ -243,42 +243,67 @@ class A2MPInqCallback:public Handler {
     A2MP * a2mp_;
 };
 
+enum PhysicalLinkStates{
+	Disconnected=0,
+	Starting=1,
+	Connecting=2,
+	Disconnecting=3,
+	Authenticating=4,
+	Connected=5
+};
+
+
+class AMPConnection {
+  public:
+class A2MP * a2mp_;
+AMPConnection *next_;
+L2CAPChannel *cid_;
+int daddr_;//destination address
+int ready_;
+int dAMP_Count_;//destination PAL count
+Controller_Info* dci_; //destination PAL(s) info
+Info_Rsp* dPAL_Info_;
+int localPalID_;
+int remotePalID_;
+int infoReqSent_;
+int infoRspRecv_;
+bool discoveryOnly_;
+PhysicalLinkStates physicalLinkState_;
+PacketQueue q_;
+u_int8_t* remoteAMPAssoc_;
+
+AMPConnection(A2MP * a2mp, L2CAPChannel * c = 0) {
+	a2mp_ = a2mp;
+	next_ =0;
+	cid_ = c;
+	daddr_=c->address();
+	ready_=0;
+	dAMP_Count_=0;
+	localPalID_=-1;
+	remotePalID_=-1;
+	infoReqSent_ =0;
+	infoRspRecv_ = 0 ;
+	discoveryOnly_ = false;
+	dci_ = new Controller_Info();
+	dPAL_Info_ = NULL;
+	physicalLinkState_=Disconnected;
+}
+
+void send() {
+    Packet *p;
+    // FIXME: check timeout of pkt first
+    while ((p = q_.deque())) {
+	cid_->enque(p);
+    }
+}
+};
+
 class PAL;
 class A2MP:public Connector {
 
 
   public:
-    class Connection {
-      public:
-	class A2MP * a2mp_;
-	Connection *next_;
-	L2CAPChannel *cid_;
-	int daddr_;//destination address
-	int ready_;
-	int dAMP_Count_;//destination PAL count
-	Controller_Info* dci_; //destination PAL(s) info
-	Info_Rsp* dPAL_Info_;
-	int localPalID_;
-	int remotePalID_;
-	int infoReqSent_;
-	int infoRspRecv_;
-	bool discoveryOnly_;
-	PacketQueue q_;
 
-	Connection(A2MP * a2mp, L2CAPChannel * c = 0)
-	 : a2mp_(a2mp), next_(0), cid_(c), daddr_(c->_bd_addr), ready_(0),dAMP_Count_(0),localPalID_(-1),remotePalID_(-1),infoReqSent_(0),infoRspRecv_(0),discoveryOnly_(false), q_() {
-		dci_ = new Controller_Info();
-		dPAL_Info_ = NULL;
-	}
-
-	void send() {
-	    Packet *p;
-	    // FIXME: check timeout of pkt first
-	    while ((p = q_.deque())) {
-		cid_->enque(p);
-	    }
-	}
-    };
 
     A2MP();
     void setup(bd_addr_t ad, LMP * l, L2CAP * l2, BTNode * node);
@@ -286,11 +311,11 @@ class A2MP:public Connector {
     void recv(Packet *, L2CAPChannel * ch);
     int command(int argc, const char *const *argv);
 
-    Connection *connect(bd_addr_t addr);
+    AMPConnection *connect(bd_addr_t addr);
     void channel_setup_complete(L2CAPChannel * ch);
-    Connection *addConnection(L2CAPChannel * ch);
-    void removeConnection(A2MP::Connection * c);
-    Connection *lookupConnection(bd_addr_t addr);
+    AMPConnection *addConnection(L2CAPChannel * ch);
+    void removeConnection(AMPConnection * c);
+    AMPConnection *lookupConnection(bd_addr_t addr);
 
 
     void inq_complete();
@@ -298,7 +323,7 @@ class A2MP:public Connector {
     void inquiry();
     void inqAndSend(Packet *);
 
-    void findMatchingControllers(A2MP::Connection * c);
+    void findMatchingControllers(AMPConnection * c);
 
     void A2MP_CommandRej(Packet *, L2CAPChannel *);
     void A2MP_DiscoverReq(bd_addr_t);
@@ -309,8 +334,8 @@ class A2MP:public Connector {
     void A2MP_GetInfoRsp(Packet *, L2CAPChannel *);
     void A2MP_Get_AMP_AssocReq(L2CAPChannel *,u_int8_t);
     void A2MP_Get_AMP_AssocRsp(Packet *, L2CAPChannel *);
-    void A2MP_CreatePhysicalLinkReq(L2CAPChannel *,Connection*);
-    void A2MP_CreatePhysicalLinkRsp(Packet *,L2CAPChannel *,Connection*,CreatePhyLinkRspStatus);
+    void A2MP_CreatePhysicalLinkReq(L2CAPChannel *,AMPConnection*);
+    void A2MP_CreatePhysicalLinkRsp(Packet *,L2CAPChannel *,AMPConnection*,CreatePhyLinkRspStatus);
     void A2MP_DisconnectPhysicalLinkReq(uchar *, int);
     void A2MP_DisconnectPhysicalLinkRsp(Packet *, L2CAPChannel *);
 
@@ -328,7 +353,7 @@ class A2MP:public Connector {
       double inqTShred_;
       int inInquiry_;
 
-      Connection *conn_;
+      AMPConnection *conn_;
       int numConn_;
       int connNumShred_;
       Bd_info *nbr_;

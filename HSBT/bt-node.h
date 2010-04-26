@@ -57,6 +57,7 @@ class BTNodeTimer:public Handler {
     class BTNode *node_;
 };
 
+class L2CAP;
 class BTNode:public WNode {
     friend class LMP;
 

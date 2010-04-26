@@ -40,6 +40,8 @@
 #include "lmp-link.h"
 #include "rendpoint.h"
 #include "bt-channel.h"
+//#include "amp-a2mp.h"
+
 // #include "lmp-piconet.h"
 
 
@@ -47,7 +49,8 @@ class L2CAPChannel;
 class ConnectionHandle;
 class LMP;
 class LMPLink;
-class PAL;
+//class PAL;
+
 
 struct QosParam {
     uint8_t Flags;
@@ -125,13 +128,15 @@ struct LMPEvent:public Event {
 //         LMPLink -- ConnectionHandle -- SCO Channel
 //
 
+class AMPConnection;
+
 class ConnectionHandle {
   public:
-    ConnectionHandle(uint16_t, uint8_t rs = 1,uint8_t controlerId=0);
+    ConnectionHandle(uint16_t, uint8_t rs = 1,bool highSpeed = false);
     void add_channel(L2CAPChannel *);
     void remove_channel(L2CAPChannel *);
     inline void setLink(LMPLink * l) { link = l; }
-    inline void setPAL(PAL * pal) { pal_ = pal; }
+    inline void setAMPConnection(AMPConnection* ampConnection) { ampConnection_ = ampConnection; }
     int isMaster();
 
 
@@ -154,8 +159,8 @@ class ConnectionHandle {
     int numChan;
     int pktRecvedLen;		// for L2CAP reassembling.
     int pktLen;			// for L2CAP reassembling.
-    PAL* pal_;
-    uint8_t controllerId_;
+    AMPConnection* ampConnection_;
+    bool highSpeed_;
 };
 
 struct PageReq {

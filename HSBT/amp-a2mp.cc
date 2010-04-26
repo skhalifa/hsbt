@@ -98,9 +98,9 @@ void A2MP::inq_complete() {
 	sendToAll();
 }
 
-A2MP::Connection * A2MP::lookupConnection(bd_addr_t addr) {
+AMPConnection * A2MP::lookupConnection(bd_addr_t addr) {
 	printf("lookup connection\n");
-	Connection *wk = conn_;
+	AMPConnection *wk = conn_;
 	while (wk) {
 		printf("check with %i \n",wk->daddr_);
 		if (wk->daddr_ == addr) {
@@ -113,24 +113,24 @@ A2MP::Connection * A2MP::lookupConnection(bd_addr_t addr) {
 	return NULL;
 }
 
-A2MP::Connection * A2MP::addConnection(L2CAPChannel * ch) {
+AMPConnection * A2MP::addConnection(L2CAPChannel * ch) {
 	printf("A2MP::addConnection\n");
-	Connection *c = new Connection(this, ch);
+	AMPConnection *c = new AMPConnection(this, ch);
 	c->next_ = conn_;
 	conn_ = c;
 	numConn_++;
 	return c;
 }
 
-void A2MP::removeConnection(A2MP::Connection * c) {
+void A2MP::removeConnection(AMPConnection * c) {
 	if (c == conn_) {
 		conn_ = conn_->next_;
 		delete c;
 		return;
 	}
 
-	Connection *par = conn_;
-	Connection *wk = conn_->next_;
+	AMPConnection *par = conn_;
+	AMPConnection *wk = conn_->next_;
 	while (wk) {
 		if (wk == c) {
 			par->next_ = wk->next_;
@@ -143,7 +143,7 @@ void A2MP::removeConnection(A2MP::Connection * c) {
 }
 
 void A2MP::channel_setup_complete(L2CAPChannel * ch) {
-	Connection *c = lookupConnection(ch->_bd_addr);
+	AMPConnection *c = lookupConnection(ch->_bd_addr);
 	if (!c) {
 		c = addConnection(ch);
 	}
@@ -151,9 +151,9 @@ void A2MP::channel_setup_complete(L2CAPChannel * ch) {
 	c->send();
 }
 
-A2MP::Connection * A2MP::connect(bd_addr_t addr) {
+AMPConnection * A2MP::connect(bd_addr_t addr) {
 	printf("A2MP::Connect\n");
-	Connection *c;
+	AMPConnection *c;
 	if ((c = lookupConnection(addr))) {
 		printf("Connection found\n");
 		return c;
@@ -208,7 +208,7 @@ int A2MP::command(int argc, const char * const *argv) {
 				return (TCL_ERROR);
 			BTNode *dest = (BTNode *) TclObject::lookup(argv[2]);
 			A2MP_DiscoverReq(dest->bb_->bd_addr_);
-			A2MP::Connection* c = lookupConnection(dest->bb_->bd_addr_);
+			AMPConnection* c = lookupConnection(dest->bb_->bd_addr_);
 			c->discoveryOnly_ = true;
 			return (TCL_OK);
 		}
@@ -216,7 +216,7 @@ int A2MP::command(int argc, const char * const *argv) {
 	return Connector::command(argc, argv);
 }
 
-void A2MP::findMatchingControllers(A2MP::Connection * c){
+void A2MP::findMatchingControllers(AMPConnection * c){
 	printf("findMatchingControllers\n");
 	u_int8_t *candidateAMP = new u_int8_t[MAX_AMP_NUMBER];
 		int k = 0;
@@ -276,7 +276,7 @@ void A2MP::inqAndSend(Packet * p) {
 void A2MP::sendToAll() {
 	assert(conn_);
 
-	Connection *c;
+	AMPConnection *c;
 	Packet *p;
 
 	while ((p = q_.deque())) {
@@ -319,6 +319,7 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 
 	case A2MP_DiscoverRequest:
 		printf("Got A2MP_DiscoverRequest.\n");
+		connect(ch->_bd_addr);
 		A2MP_DiscoverRsp(p, ch);
 		break;
 
@@ -334,13 +335,13 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 					testcl[i].controller_Status_);
 		}
 		printf("connection to address ch->_bd_addr %i",ch->_bd_addr);
-		Connection *c = lookupConnection(ch->_bd_addr);
+		AMPConnection *c = lookupConnection(ch->_bd_addr);
 		printf("connection to address c->daddr_ %i",c->daddr_);
 		c->dAMP_Count_ = rep->AMP_Count_;
 		c->dci_ = rep->controller_Info_;
-		if (!c->discoveryOnly_) {
+		//if (!c->discoveryOnly_) {
 			findMatchingControllers(c);
-		}
+		//}
 	}
 		break;
 
@@ -362,7 +363,7 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 	case A2MP_GetInfoResponse:{
 
 		//Choose the AMP/controllerID based on the maxGaranteedBandwidth other than BR/EDR controllerID=0x00 and send assoc request
-		Connection* c = lookupConnection(ch->_bd_addr);
+		AMPConnection* c = lookupConnection(ch->_bd_addr);
 		c->infoRspRecv_++;
 		printf("Got A2MP_GetInfoResponse %i/%i. controller (%i) with maxBW %i\n",c->infoRspRecv_,c->infoReqSent_,((Info_Rsp* )p->accessdata())->controllerID_,((Info_Rsp* )p->accessdata())->maxGaranteedBandwidth_);
 		if(c->dPAL_Info_== NULL)
@@ -415,16 +416,16 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 		//			assocStructure = p->accessdata()[2];
 		//		}
 		//		uchar req={localControllerId,remoteControllerId,assocStructure};
-		Connection* c = lookupConnection(ch->_bd_addr);
+		AMPConnection* c = lookupConnection(ch->_bd_addr);
 		AssocRsp* rsp = (AssocRsp* )p->accessdata();
 		printf("local pal ID %i\n",c->localPalID_);
 		printf("remote pal ID %i\n",c->remotePalID_);
 		printf("remote pal from pal info ID %i\n",c->dPAL_Info_->controllerID_);
 		printf("pal_[c->localPalID_]->controllerStatus_ %i\n",pal_[c->localPalID_]->controllerStatus_);
-		PhysLinkCompleteStatus physLinkCompleteStatus = pal_[c->localPalID_]->HCI_Create_Physical_Link(rsp->amp_assoc_);
+		PhysLinkCompleteStatus physLinkCompleteStatus = pal_[c->localPalID_]->HCI_Create_Physical_Link(c);
 		if(physLinkCompleteStatus == NoError)
 		{
-			pal_[c->localPalID_]->HCI_Write_Remote_AMP_Assoc(rsp->amp_assoc_);
+			pal_[c->localPalID_]->HCI_Write_Remote_AMP_Assoc(c,rsp->amp_assoc_);
 			printf("remote mac address is %i\n",((ASSOC802_11**)rsp->amp_assoc_)[0]->value_);
 			A2MP_CreatePhysicalLinkReq(ch,c);
 		}
@@ -437,7 +438,7 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 	{
 		printf("Got A2MP_CreatePhysicalLinkRequest.\n");
 		//PAL open the specified AMP radio
-		Connection* c = connect(ch->_bd_addr);
+		AMPConnection* c = lookupConnection(ch->_bd_addr);
 		CreatePhyLinkReq* req = (CreatePhyLinkReq*) p->accessdata();
 		c->localPalID_=req->remoteControllerID_;
 		c->remotePalID_ = req->localControllerID_;
@@ -454,11 +455,11 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 		}
 
 		if(status == PhyCreateSuccess){
-			PhysLinkCompleteStatus physLinkCompleteStatus = pal_[c->localPalID_]->HCI_Accept_Physical_Link(req->amp_assoc_);
+			PhysLinkCompleteStatus physLinkCompleteStatus = pal_[c->localPalID_]->HCI_Accept_Physical_Link(c);
 			if(physLinkCompleteStatus == NoError)
 			{
 				printf("success\n");
-				pal_[c->localPalID_]->HCI_Write_Remote_AMP_Assoc(req->amp_assoc_);
+				pal_[c->localPalID_]->HCI_Write_Remote_AMP_Assoc(c,req->amp_assoc_);
 			}
 			else{
 				printf("Unable to start MAC\n");
@@ -474,8 +475,8 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 	{
 		printf("Got A2MP_CreatePhysicalLinkResponse.\n");
 		//TODO: PAL create AMP physical link
-		Connection* c = lookupConnection(ch->_bd_addr);
-		pal_[c->localPalID_]->MAC_Connect();
+		AMPConnection* c = lookupConnection(ch->_bd_addr);
+		pal_[c->localPalID_]->MAC_Connect(c);
 	}
 		break;
 	case A2MP_DisconnectPhysicalLinkRequest:
@@ -517,6 +518,7 @@ void A2MP::A2MP_DiscoverReq(bd_addr_t dest_add) {
 	//Sent to peer AMP Manger to obtain the list os the available Controllers supported by that peer
 	//int len = 4;//data field is divided to MTU/MPS size (2 octets) and External Feature Mask (2 octets)
 	//uchar req[] = {0x029E,0x0000};//MTU_MPS >= 670 and EFM =0x0000
+	printf("A2MP :: Discoverreq Connect to %i\n",dest_add);
 	Discovry_Req* req = new Discovry_Req(0x029E, 0x0000);
 	Packet *p = gen_a2mp_pkt((uchar*) req, sizeof(Discovry_Req));
 	hdr_a2mp *sh = HDR_A2MP(p);
@@ -670,7 +672,7 @@ void A2MP::A2MP_Get_AMP_AssocRsp(Packet * p, L2CAPChannel * ch) {
 	sh_resp->Length_ =  sizeof(AssocRsp);
 	ch->enque(resp);
 }
-void A2MP::A2MP_CreatePhysicalLinkReq(L2CAPChannel * ch,Connection* c) {
+void A2MP::A2MP_CreatePhysicalLinkReq(L2CAPChannel * ch,AMPConnection* c) {
 
 	printf("A2MP::A2MP_CreatePhysicalLinkReq \n");
 	CreatePhyLinkReq* req = new CreatePhyLinkReq(c->localPalID_,c->dPAL_Info_->controllerID_,pal_[c->localPalID_]->HCI_Read_Local_AMP_Assoc());
@@ -684,7 +686,7 @@ void A2MP::A2MP_CreatePhysicalLinkReq(L2CAPChannel * ch,Connection* c) {
 	ch->enque(p);
 	//inqAndSend(p);
 }
-void A2MP::A2MP_CreatePhysicalLinkRsp(Packet * p,L2CAPChannel * ch ,Connection* c,CreatePhyLinkRspStatus status) {
+void A2MP::A2MP_CreatePhysicalLinkRsp(Packet * p,L2CAPChannel * ch ,AMPConnection* c,CreatePhyLinkRspStatus status) {
 
 	//data field is divided to local Controller ID (1 octet),remote Controller ID (1 octet) and Status (1 octet)
 	hdr_a2mp *sh = HDR_A2MP(p);
