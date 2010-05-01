@@ -774,7 +774,7 @@ L2CAPChannel *L2CAP::L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm,bool highSp
 			ch->_connhand = connh;
 			connh->add_channel(ch);
 		}
-
+		conn->setLogicalChannel(ch);
 		connh->recv_packet_type = lmp_->defaultRecvPktType_;
 		addConnectionHandle(connh);
 		// ch->_connhand->add_channel(ch);

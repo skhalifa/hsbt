@@ -109,7 +109,11 @@ void PAL802_11::sendUp(Packet *p, Handler *h){
 void PAL802_11::sendDown(AMPConnection* conn,Packet *p){
 	if(conn->physicalLinkState_ == Connected){
 	 printf("Sending MAC Packet to %i\n",((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_);
-	 printf("Sending MAC Packet to using daddr_%i\n",conn->daddr_);
+	 printf("Sending MAC Packet to using daddr_%i\n",conn->dBTaddr_);
+	hdr_cmn *ch = HDR_CMN(p);
+	hdr_bt *bh = HDR_BT(p);
+	hdr_l2cap *lh = &bh->l2caphdr;
+	 bh->ph.length = 16;//Temp Hack
 	 u_int8_t* dap = ((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_;
 		char *mh = (char*)p->access(hdr_mac::offset_);
 		mac_->hdr_src(mh, mac_->addr());
@@ -155,6 +159,7 @@ u_int8_t* PAL802_11::HCI_Read_Local_AMP_Assoc()
 
 void PAL802_11::HCI_Write_Remote_AMP_Assoc(AMPConnection* conn,u_int8_t* ampAssoc){
 	conn->remoteAMPAssoc_ = ampAssoc;
+	conn->dAMPaddr_ = (int) (((ASSOC802_11**)ampAssoc)[0]->value_);
 
 }
 void PAL802_11::HCI_Reset(){
@@ -255,15 +260,17 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 //Actions
  void PAL802_11::Determine_Selected_Channel() {}
  void PAL802_11::Signal_MAC_Start_On_Channel(/*physical channel*/) {}
- void PAL802_11::MAC_Connect(AMPConnection* conn) {
+ void PAL802_11::MAC_Initiate_Handshake(AMPConnection* conn) {
 	 //This function will make the MAC send a RTS message to the peering MAC
-	 printf("Sending MAC Packet to %i\n",((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_);
-	 u_int8_t* dap = ((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_;
+	 //printf("Sending MAC Packet to %i\n",((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_);
+	 printf("Sending MAC Packet to %i\n",conn->dAMPaddr_);
+	 //u_int8_t* dap = ((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_;
+	 //u_int8_t* dap = conn->dAMPaddr_;
 		Packet *p = Packet::alloc(10);
 		char *mh = (char*)p->access(hdr_mac::offset_);
 		mac_->hdr_src(mh, mac_->addr());
 		mac_->hdr_type(mh, ETHERTYPE_IP);
-		mac_->hdr_dst((char*) HDR_MAC(p), (int)dap);
+		mac_->hdr_dst((char*) HDR_MAC(p), conn->dAMPaddr_);
 
 		hdr_pal *sh = HDR_PAL(p);
 		sh->protocol_ = Link_Supervision_Request;
@@ -277,13 +284,14 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 
  }
 
- void PAL802_11::MAC_Initiate_Handshake(/*physical channel*/) {}
  void PAL802_11::Cancel_MAC_Connect_Operation(/*physical channel*/) {}
  void PAL802_11::Signal_MAC_Start_To_Disconnect(/*physical channel*/) {}
 //Logical Link Manager functions
 //Implements operations on logical link includes logical link creation/deletion and applying QoS
  void PAL802_11::HCI_Flow_Spec_modify(){}
- void PAL802_11::HCI_Create_Logical_link(){}
+ void PAL802_11::HCI_Create_Logical_link(AMPConnection* c){
+	 l2cap_->connection_complete_event(c->logicalChannel_->connhand(),0,1);
+ }
  void PAL802_11::HCI_Accept_Logical_link(){}
  void PAL802_11::HCI_Disconnect_Logical_link(){}
 //Data Manager functions
@@ -391,6 +399,7 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 			AMPConnection* conn = a2mp_->lookupConnection(mac_->hdr_src(mh,-2));
 			conn->physicalLinkState_=Connected;
 			//notify A2MP to create the logical link
+			HCI_Create_Logical_link(conn);
 		}
 			break;
 		default:

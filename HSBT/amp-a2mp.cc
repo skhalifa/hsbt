@@ -102,9 +102,9 @@ AMPConnection * A2MP::lookupConnection(bd_addr_t addr) {
 	printf("lookup connection\n");
 	AMPConnection *wk = conn_;
 	while (wk) {
-		printf("check with %i \n",wk->daddr_);
-		if (wk->daddr_ == addr) {
-			printf("connection found to address %i\n",addr);
+		printf("check with %i and AMP %i \n",wk->dBTaddr_,wk->dAMPaddr_);
+		if (wk->dBTaddr_ == addr || wk->dAMPaddr_ == addr) {
+			printf("connection found to address %i with BT add=%i and AMP add=%i\n",addr,wk->dBTaddr_,wk->dAMPaddr_);
 			return wk;
 		}
 		wk = wk->next_;
@@ -336,7 +336,7 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 		}
 		printf("connection to address ch->_bd_addr %i",ch->_bd_addr);
 		AMPConnection *c = lookupConnection(ch->_bd_addr);
-		printf("connection to address c->daddr_ %i",c->daddr_);
+		printf("connection to address c->daddr_ %i",c->dBTaddr_);
 		c->dAMP_Count_ = rep->AMP_Count_;
 		c->dci_ = rep->controller_Info_;
 		//if (!c->discoveryOnly_) {
@@ -474,9 +474,9 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 	case A2MP_CreatePhysicalLinkResponse:
 	{
 		printf("Got A2MP_CreatePhysicalLinkResponse.\n");
-		//TODO: PAL create AMP physical link
 		AMPConnection* c = lookupConnection(ch->_bd_addr);
-		pal_[c->localPalID_]->MAC_Connect(c);
+		c->ready_ = 1;
+		pal_[c->localPalID_]->MAC_Initiate_Handshake(c);
 	}
 		break;
 	case A2MP_DisconnectPhysicalLinkRequest:

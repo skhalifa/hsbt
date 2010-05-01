@@ -196,14 +196,14 @@ public:
     //Actions
      void Determine_Selected_Channel() ;
      void Signal_MAC_Start_On_Channel(/*physical channel*/) ;
-     void MAC_Connect(AMPConnection*) ;
-     void MAC_Initiate_Handshake(/*physical channel*/) ;
+     //void MAC_Connect(AMPConnection*) ;
+     void MAC_Initiate_Handshake(AMPConnection*) ;
      void Cancel_MAC_Connect_Operation(/*physical channel*/) ;
      void Signal_MAC_Start_To_Disconnect(/*physical channel*/) ;
     //Logical Link Manager functions
     //Implements operations on logical link includes logical link creation/deletion and applying QoS
      void HCI_Flow_Spec_modify();
-     void HCI_Create_Logical_link();
+     void HCI_Create_Logical_link(AMPConnection* c);
      void HCI_Accept_Logical_link();
      void HCI_Disconnect_Logical_link();
     //Data Manager functions

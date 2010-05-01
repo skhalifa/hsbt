@@ -44,7 +44,7 @@
 #include "lmp.h"
 #include "amp-a2mp.h"
 #include "mac.h"
-//#include "wireless-phy.h"
+#include "wireless-phy.h"
 
 //==================
 //Controller IDs
@@ -214,14 +214,14 @@ public:
     //Actions
     virtual void Determine_Selected_Channel() =0;
     virtual void Signal_MAC_Start_On_Channel(/*physical channel*/) =0;
-    virtual void MAC_Connect(AMPConnection*) =0;
-    virtual void MAC_Initiate_Handshake(/*physical channel*/) =0;
+    //virtual void MAC_Connect(AMPConnection*) =0;
+    virtual void MAC_Initiate_Handshake(AMPConnection*) =0;
     virtual void Cancel_MAC_Connect_Operation(/*physical channel*/) =0;
     virtual void Signal_MAC_Start_To_Disconnect(/*physical channel*/) =0;
     //Logical Link Manager functions
     //Implements operations on logical link includes logical link creation/deletion and applying QoS
     virtual void HCI_Flow_Spec_modify()= 0;
-    virtual void HCI_Create_Logical_link()= 0;
+    virtual void HCI_Create_Logical_link(AMPConnection* c)= 0;
     virtual void HCI_Accept_Logical_link()= 0;
     virtual void HCI_Disconnect_Logical_link()= 0;
     //Data Manager functions
