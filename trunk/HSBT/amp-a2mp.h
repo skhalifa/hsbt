@@ -258,7 +258,7 @@ class AMPConnection {
 class A2MP * a2mp_;
 AMPConnection *next_;
 L2CAPChannel *cid_;
-int daddr_;//destination address
+int dBTaddr_;//destination BT (controller 0) address
 int ready_;
 int dAMP_Count_;//destination PAL count
 Controller_Info* dci_; //destination PAL(s) info
@@ -271,12 +271,14 @@ bool discoveryOnly_;
 PhysicalLinkStates physicalLinkState_;
 PacketQueue q_;
 u_int8_t* remoteAMPAssoc_;
+L2CAPChannel *logicalChannel_;
+int dAMPaddr_;//destination AMP MAC address
 
 AMPConnection(A2MP * a2mp, L2CAPChannel * c = 0) {
 	a2mp_ = a2mp;
 	next_ =0;
 	cid_ = c;
-	daddr_=c->address();
+	dBTaddr_=c->address();
 	ready_=0;
 	dAMP_Count_=0;
 	localPalID_=-1;
@@ -287,8 +289,14 @@ AMPConnection(A2MP * a2mp, L2CAPChannel * c = 0) {
 	dci_ = new Controller_Info();
 	dPAL_Info_ = NULL;
 	physicalLinkState_=Disconnected;
+	logicalChannel_ = NULL;
+	dAMPaddr_ = c->address();
 }
 
+void setLogicalChannel(L2CAPChannel* c)
+{
+	logicalChannel_ = c;
+}
 void send() {
     Packet *p;
     // FIXME: check timeout of pkt first
@@ -296,6 +304,15 @@ void send() {
 	cid_->enque(p);
     }
 }
+
+void sendAMP() {
+    Packet *p;
+    // FIXME: check timeout of pkt first
+    while ((p = q_.deque())) {
+	logicalChannel_->enque(p);
+    }
+}
+
 };
 
 class PAL;
