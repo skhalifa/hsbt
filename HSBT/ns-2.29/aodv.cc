@@ -578,7 +578,7 @@ void
 AODV::recv(Packet *p, Handler*) {
 struct hdr_cmn *ch = HDR_CMN(p);
 struct hdr_ip *ih = HDR_IP(p);
-
+printf("AODV recieved packet %i - from %i to %i \n",(ch->ptype()),ih->saddr(),ih->daddr());
  assert(initialized());
  //assert(p->incoming == 0);
  // XXXXX NOTE: use of incoming flag has been depracated; In order to track direction of pkt flow, direction_ in hdr_cmn is used instead. see packet.h for details.
@@ -1188,7 +1188,8 @@ aodv_rt_entry *rt = rtable.rt_lookup(dst);
  assert ((seqno%2) == 0);
  rq->rq_src_seqno = seqno;
  rq->rq_timestamp = CURRENT_TIME;
-
+ //Handler* h =0;
+ //target_->recv(p,h);
  Scheduler::instance().schedule(target_, p, 0.);
 
 }
@@ -1231,6 +1232,9 @@ fprintf(stderr, "sending Reply from %d at %.2f\n", index, Scheduler::instance().
  ih->sport() = RT_PORT;
  ih->dport() = RT_PORT;
  ih->ttl_ = NETWORK_DIAMETER;
+
+ //Handler*h = 0 ;
+ //target_->recv(p,h);
 
  Scheduler::instance().schedule(target_, p, 0.);
 
