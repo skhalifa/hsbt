@@ -103,33 +103,62 @@ void PAL802_11::_init(){
 }
 
 void PAL802_11::sendUp(Packet *p, Handler *h){
+	hdr_bt *bh = HDR_BT(p);
+	AMPConnection* conn = a2mp_->lookupConnection(bh->sender);
 
+	//printf("I'm %i sending up with connh dest add  %i \n",mac_->addr(),conn->logicalChannel_->address());
+	if(conn)
+	{
+		bh->connHand_ = conn->logicalChannel_->connhand();
+		l2cap_->sendUp(p,h);
+	}
 }
 
 void PAL802_11::sendDown(AMPConnection* conn,Packet *p){
+
+
 	if(conn->physicalLinkState_ == Connected){
-	 printf("Sending MAC Packet to %i\n",((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_);
-	 printf("Sending MAC Packet to using daddr_%i\n",conn->dBTaddr_);
+	 //printf("Sending MAC Packet to %i\n",((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_);
+	 printf("I'm %i Sending MAC Packet to %i with BT daddr_%i\n",mac_->addr(),conn->dAMPaddr_,conn->dBTaddr_);
 	hdr_cmn *ch = HDR_CMN(p);
 	hdr_bt *bh = HDR_BT(p);
 	hdr_l2cap *lh = &bh->l2caphdr;
-	 bh->ph.length = 16;//Temp Hack
-	 u_int8_t* dap = ((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_;
-		char *mh = (char*)p->access(hdr_mac::offset_);
-		mac_->hdr_src(mh, mac_->addr());
-		mac_->hdr_type(mh, ETHERTYPE_IP);
-		//TODO : Try using conn->daddr_
-		mac_->hdr_dst((char*) HDR_MAC(p), (int)dap);
+	hdr_mac *mh = HDR_MAC(p);
 
-		hdr_pal *sh = HDR_PAL(p);
-		sh->protocol_ = L2CAP_DATA;
-		//FIXME : check the need for the identifier and length in the pal header
-		sh->identifier_ = 1;
-		sh->Length_ = sizeof(p);
-		//send auth packet
-		Scheduler& s = Scheduler::instance();
-		// let mac decide when to take a new packet from the queue.
-		s.schedule(((Mac802_11*)mac_), p, 0);
+
+	 bh->ph.length = lh->length+4;//Temp Hack
+	 bh->sender = mac_->addr();
+
+	 //bh->connHand_= conn->cid_->connhand();
+	 //u_int8_t* dap = ((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_;
+	//char *mh = (char*)p->access(hdr_mac::offset_);
+
+	if (mh->macDA() == (int) MAC_BROADCAST)
+	{
+		printf("\n\n\nBNEP BroadCast\n\n\n");
+		bh->receiver = mh->macDA();
+		mac_->hdr_src((char*)mh, mac_->addr());
+		mac_->hdr_type((char*)mh, ETHERTYPE_IP);
+		mac_->hdr_dst((char*)mh,MAC_BROADCAST);
+	}
+	else{
+		bh->receiver = conn->dAMPaddr_;
+		mac_->hdr_src((char*)mh, mac_->addr());
+		mac_->hdr_type((char*)mh, ETHERTYPE_IP);
+		mac_->hdr_dst((char*)mh, (int)conn->dAMPaddr_);
+	}
+
+	hdr_pal *sh = HDR_PAL(p);
+	sh->protocol_ = L2CAP_DATA;
+	//FIXME : check the need for the identifier and length in the pal header
+	sh->identifier_ = 1;
+	sh->Length_ = sizeof(p);
+
+
+	//send auth packet
+	Scheduler& s = Scheduler::instance();
+	// let mac decide when to take a new packet from the queue.
+	s.schedule(((Mac802_11*)mac_), p, 0);
 	}
 
 }
@@ -160,6 +189,11 @@ u_int8_t* PAL802_11::HCI_Read_Local_AMP_Assoc()
 void PAL802_11::HCI_Write_Remote_AMP_Assoc(AMPConnection* conn,u_int8_t* ampAssoc){
 	conn->remoteAMPAssoc_ = ampAssoc;
 	conn->dAMPaddr_ = (int) (((ASSOC802_11**)ampAssoc)[0]->value_);
+	if(conn->logicalChannel_ == NULL)
+	{
+		l2cap_->connection_highSpeed(conn,conn->dAMPaddr_,PSM_BNEP);
+	}
+	conn->logicalChannel_->setRemoteAddress(conn->dAMPaddr_);
 
 }
 void PAL802_11::HCI_Reset(){
@@ -362,17 +396,17 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
  void PAL802_11::recv(Packet* p, Handler* callback = 0){
 	 printf("\n\n\nPAL802.11 has just received a packet from MAC 802.11\n\n\n");
 		hdr_pal *sh = HDR_PAL(p);
-
+		struct hdr_cmn *ch = HDR_CMN(p);
 		char buf[1024];
 		int len = 1024;
 		uchar* req;
 
 		char *mh = (char*)p->access(hdr_mac::offset_);
-		printf("%d PAL::recv() from %d - %s packet with code %x\n", mac_->hdr_dst(mh,-2),mac_->hdr_src(mh,-2), sh->dump(buf, len), sh->protocol_);
+		printf("I'm %i PAL::recv() from %i packet was sent to %i- %s packet with code %x\n",mac_->addr(),mac_->hdr_src(mh,-2), mac_->hdr_dst(mh,-2), sh->dump(buf, len), sh->protocol_);
 
 		switch (sh->protocol_) {
 		case L2CAP_DATA:
-				l2cap_->sendUp(p,callback);
+				sendUp(p,callback);
 			break;
 		case Link_Supervision_Request:{
 			AMPConnection* conn = a2mp_->lookupConnection(mac_->hdr_src(mh,-2));
@@ -406,16 +440,7 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 				fprintf(stderr, "%d PAL received packed with invalid protocol %d\n",
 						mac_->hdr_dst(mh,-2), sh->protocol_);
 			}
-
-			Packet::free(p);
-
-	 // on recieving auth req packet send it up to the A2MP and send auth resp to the source
-	 // on recieving auth resp packet send it up to the A2MP
-	 //if()
-	/* if(physicalLinkState_ == Connected)
-	 		 l2cap_->recv(p,callback);
-	 else if(physicalLinkState_ == Connecting)
-		 physicalLinkState_=Connected;*/
-
+		//if(ch->ptype() != PT_AODV)
+			//Packet::free(p);
 
  }
