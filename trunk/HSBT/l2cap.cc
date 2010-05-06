@@ -372,7 +372,7 @@ void L2CAP::l2capCommand(uchar code, uchar * content, int len,
     }*/
     if ((trace_all_l2cap_cmd_ || trace_me_l2cap_cmd_) && connh ) {
  	fprintf(BtStat::log_, L2CAPPREFIX0 "%d->%d %f %s\n",
- 		bd_addr_, connh->chan->_bd_addr,
+ 		/*bd_addr_*/bh->sender, connh->chan->_bd_addr,
  		Scheduler::instance().clock(), opcode_str(cmd->code));
      }
 
@@ -767,7 +767,7 @@ L2CAPChannel *L2CAP::L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm,bool highSp
 
 		if (connh) {
 		if (!ch) {
-			ch = new L2CAPChannel(this, psm, connh, 0,bd_addr,0,highSpeed);
+			ch = new L2CAPChannel(this, psm, connh, 0,conn->dAMPaddr_,0,highSpeed);
 			ch->_bd_addr = bd_addr;
 			registerChannel(ch);
 		} else {
@@ -864,7 +864,43 @@ void L2CAP::connection_ind(ConnectionHandle * connh)
     addConnectionHandle(connh);
     registerChannel(ch);
 }
+void L2CAP::connection_highSpeed(AMPConnection* conn,bd_addr_t bd_addr,int psm)
+{
+	   L2CAPChannel *ch = lookupChannel(psm, bd_addr,true);
+	    if (ch) {
+		if (!ch->failed) {
+		    return;
 
+		} else {		// reset this Channel
+		    ch->failed = 0;
+		    ch->ready_ = 0;
+		}
+	    }
+
+	ConnectionHandle *connh =  new ConnectionHandle(lmp_->defaultPktType_,1,true);
+	connh->setAMPConnection(conn);
+
+	if (connh) {
+	if (!ch) {
+		ch = new L2CAPChannel(this, psm, connh, 0,bd_addr,0,true);
+		ch->_bd_addr = bd_addr;
+		registerChannel(ch);
+	} else {
+		ch->_connhand = connh;
+		connh->add_channel(ch);
+	}
+	conn->setLogicalChannel(ch);
+	connh->recv_packet_type = lmp_->defaultRecvPktType_;
+	addConnectionHandle(connh);
+	// ch->_connhand->add_channel(ch);
+	ch->_connhand->reqCid = ch;
+	if (ch->_connhand->ready_) {	// AclLink exists.
+		connection_complete_event(ch->_connhand, 0, 1);
+	}
+	connh->ready_ = 1;
+
+	}
+}
 int L2CAP::L2CA_ConnectRsp(ConnectionHandle * connh,
 			   L2CAP::ConnReq * connreq)
 {
