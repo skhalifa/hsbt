@@ -43,11 +43,59 @@ $node(2) add-PAL $val(palType) $topo $chan $val(prop)
 	##################################################
 set a2mp0 [$node(0) set a2mp_]
 
-$ns_ at 1 "$node(0) make-hs-connection $node(1)"
+
+#=========================================================================
+# Configuration # of links, traffic and applications 
+#=========================================================================
+set tcp2 [new Agent/TCP] ;#Declaration of TCP traffic agent
+$ns_ attach-agent $node(0) $tcp2 ;#Union agent with the node for (tx)
+set ftp2 [new Application/FTP] ;#Declaration of new FTP application
+$ftp2 attach-agent $tcp2 ;# union of the application agent Traffic
+
+
+set null0 [new Agent/TCPSink] ;#Declaración del repositorio del agente de trafico TCP
+$ns_ attach-agent $node(1) $null0 ;#Unión del repositorio con el nodo correspondiente (rx)
+$ns_ connect $tcp2 $null0 ;#unión del agente de trafico con el repositorio
+set ifq [new Queue/DropTail] ;#Declaration of the queue or buffer
+$ifq set limit_ 20 ;#Limit the queue (packet)
+
+
+
+
+#=========================================================================
+# Event Organizer *
+#=========================================================================
+$ns_ at 0.000001 "$ns_ trace-annotate \" BEGIN SIMULATION \""
+$ns_ at 0.1 "$node(0) make-hs-connection $node(1)"
+#$ns_ at 0.1 "$node(0) make-bnep-connection $node(1) DH5 DH5 noqos $ifq"
+#$ns_ at 0.1 "$node(0) make-bnep-connection $node(1)"
+
+$ns_ at 10.0 "$ftp2 send 4000000000"
+#$ns_ at 10.0 "$ftp2 stop"
+
+#===================================
+#        Termination        
+#===================================
+#Define a 'finish' procedure
+proc finish {} {
+    global ns tracefile namfile
+    $ns_ flush-trace
+    close $tracefile
+    close $namfile
+    exec nam out.nam &
+    exit 0
+}
+
+#$ns at $val(stop) "$ns nam-end-wireless $val(stop)"
+#$ns at $val(stop) "finish"
+#$ns at $val(stop) "puts \"done\" ; $ns halt"
+#$ns run
+
+#$ns_ at 1 "$node(0) make-hs-connection $node(1)"
 #$ns_ at 1 "$a2mp0 discover $node(6)"
 #$ns_ at 5 "$a2mp0 discover $node(1)"
 #$ns_ at 10 "$a2mp0 discover $node(5)"
-$ns_ at 50 "$ns_ halt"
+$ns_ at 150 "$ns_ halt"
 
 $ns_ run
 
