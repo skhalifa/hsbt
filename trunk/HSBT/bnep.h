@@ -431,9 +431,9 @@ class BNEP:public Mac {
 			hdr_bt::packet_type rpt = hdr_bt::NotSpecified,
 			Queue * ifq = 0,bool highSpeed = false);
     void disconnect(bd_addr_t addr, uchar reason);
-    Connection *lookupConnection(bd_addr_t addr,bool highSpeed =false);
+    Connection *lookupConnection(bd_addr_t addr);
     Connection *lookupConnection(L2CAPChannel *);
-    L2CAPChannel *lookupChannel(bd_addr_t addr,bool highSpeed = false);
+    L2CAPChannel *lookupChannel(bd_addr_t addr);
     Connection *addConnection(L2CAPChannel *);
     void removeConnection(Connection *);
     void removeConnection(L2CAPChannel * ch);
