@@ -108,7 +108,7 @@ class L2CAPChannel {
     inline void setCmd(const char *c) { _nscmd = c; }
     inline void setQosParam(QosParam * qos) { _qos = qos; }
     inline bd_addr_t remote() { return _bd_addr; }
-
+    inline void setRemoteAddress(bd_addr_t add){ _bd_addr = add;}
     void flush();
     void disconnect(uchar reason);
     void linkDetached();
@@ -222,6 +222,7 @@ class L2CAP:public BiConnector {
     int connection_complete_event(ConnectionHandle *, int type,
 				  int status);
     void connection_ind(ConnectionHandle *);
+    void connection_highSpeed(AMPConnection*,bd_addr_t,int);
     void _channel_setup_complete(L2CAPChannel *);
 
     //L2CAPChannel *L2CA_ConnectReq(bd_addr_t bd_addr, uint16_t psm = 0);
