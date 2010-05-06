@@ -185,7 +185,7 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 
 		set a2mp_ [$self set a2mp_]
 		set l2cap_ [$self set l2cap_]
-		
+		set bnep_ [$self set bnep_]
 		
 		set ns [Simulator instance]
 		set imepflag [$ns imep-support]
@@ -397,71 +397,87 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 		# let topo keep handle of channel
 		$topo channel $channel
 		# ============================================================
-	###################log#######################
-
-#		if { [Simulator set MacTrace_] == "ON" } {
-#			#
-#			# Trace RTS/CTS/ACK Packets
-#			#
-#			if {$imepflag != ""} {
-#				set rcvT [$self mobility-trace Recv "MAC"]
-#			} else {
-#				set rcvT [bt-trace Recv "MAC" $self]
-#				#set rcvT [cmu-trace Recv "MAC" $self]
-#				#set rcvT [$self mobility-trace Recv "MAC"]
-#			}
-#			$mac log-target $rcvT
-#			if { $namfp != "" } {
-#				$rcvT namattach $namfp
-#			}
-#			#
-#			# Trace Sent Packets
-#			#
-#			if {$imepflag != ""} {
-#				set sndT [$self mobility-trace Send "MAC"]
-#			} else {
-#				set sndT [bt-trace Send "MAC" $self]
-#				#set sndT [cmu-trace Send "MAC" $self]
-#				#set sndT [$self mobility-trace Send "MAC"]
-#			}
-#			$sndT target [$mac down-target]
-#			$mac down-target $sndT
-#			if { $namfp != "" } {
-#				$sndT namattach $namfp
-#			}
-#			#
-#			# Trace Received Packets
-#			#
-#			if {$imepflag != ""} {
-#				set rcvT [$self mobility-trace Recv "MAC"]
-#			} else {
-#				set rcvT [bt-trace Recv "MAC" $self]
-#				#set rcvT [cmu-trace Recv "MAC" $self]
-#				#set rcvT [$self mobility-trace Recv "MAC"]
-#			}
-#			$rcvT target [$mac up-target]
-#			$mac up-target $rcvT
-#			if { $namfp != "" } {
-#				$rcvT namattach $namfp
-#			}
-#			#
-#			# Trace Dropped Packets
-#			#
-#			if {$imepflag != ""} {
-#				set drpT [$self mobility-trace Drop "MAC"]
-#			} else {
-#				set drpT [bt-trace Drop "MAC" $self]
-#				#set drpT [cmu-trace Drop "MAC" $self]
-#				#set drpT [$self mobility-trace Drop "MAC"]
-#			}
-#			$mac drop-target $drpT
-#			if { $namfp != "" } {
-#				$drpT namattach $namfp
-#			}
-#		} else {
-#			$mac log-target [$ns set nullAgent_]
-#			$mac drop-target [$ns set nullAgent_]
+#			set tracefd [$ns get-ns-traceall]
+#	if {[Simulator set MacTrace_] == "ON" && $tracefd != "" } {
+#		# puts "tracefile : $tracefd"
+#		set sndT [bt-trace Send MAC $self]
+#		$bnep_ down-target $sndT
+#		$sndT target $phy_
+#		$mac_ drop-target [bt-trace Drop MAC $self]
+#		set rcvT [bt-trace Recv MAC $self]
+#		$phy_ up-target $rcvT
+#		$rcvT target $bb_
+#
+#		if {$namtracefd != "" } {
+#		    $sndT namattach $namtracefd
+#		    $rcvT namattach $namtracefd
 #		}
+#	}
+#	###################log#######################
+
+		if { [Simulator set MacTrace_] == "ON" } {
+			#
+			# Trace RTS/CTS/ACK Packets
+			#
+			if {$imepflag != ""} {
+				set rcvT [$self mobility-trace Recv "MAC"]
+			} else {
+				set rcvT [bt-trace Recv "MAC" $self]
+				#set rcvT [cmu-trace Recv "MAC" $self]
+				#set rcvT [$self mobility-trace Recv "MAC"]
+			}
+			$mac log-target $rcvT
+			if { $namfp != "" } {
+				$rcvT namattach $namfp
+			}
+			#
+			# Trace Sent Packets
+			#
+			if {$imepflag != ""} {
+				set sndT [$self mobility-trace Send "MAC"]
+			} else {
+				set sndT [bt-trace Send "MAC" $self]
+				#set sndT [cmu-trace Send "MAC" $self]
+				#set sndT [$self mobility-trace Send "MAC"]
+			}
+			$sndT target [$mac down-target]
+			$mac down-target $sndT
+			if { $namfp != "" } {
+				$sndT namattach $namfp
+			}
+			#
+			# Trace Received Packets
+			#
+			if {$imepflag != ""} {
+				set rcvT [$self mobility-trace Recv "MAC"]
+			} else {
+				set rcvT [bt-trace Recv "MAC" $self]
+				#set rcvT [cmu-trace Recv "MAC" $self]
+				#set rcvT [$self mobility-trace Recv "MAC"]
+			}
+			$rcvT target [$mac up-target]
+			$mac up-target $rcvT
+			if { $namfp != "" } {
+				$rcvT namattach $namfp
+			}
+			#
+			# Trace Dropped Packets
+			#
+			if {$imepflag != ""} {
+				set drpT [$self mobility-trace Drop "MAC"]
+			} else {
+				set drpT [bt-trace Drop "MAC" $self]
+				#set drpT [cmu-trace Drop "MAC" $self]
+				#set drpT [$self mobility-trace Drop "MAC"]
+			}
+			$mac drop-target $drpT
+			if { $namfp != "" } {
+				$drpT namattach $namfp
+			}
+		} else {
+			$mac log-target [$ns set nullAgent_]
+			$mac drop-target [$ns set nullAgent_]
+		}
 	###################End log#######################
 	# change wrt Mike's code
 	       if { [Simulator set EotTrace_] == "ON" } {
