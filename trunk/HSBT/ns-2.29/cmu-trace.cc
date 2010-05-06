@@ -244,6 +244,7 @@ CMUTrace::format_mac_common(Packet *p, const char *why, int offset)
 	}
 
 
+
 #ifdef LOG_POSITION
         x = 0.0, y = 0.0, z = 0.0;
         // node_->getLoc(&x, &y, &z);
@@ -267,32 +268,31 @@ CMUTrace::format_mac_common(Packet *p, const char *why, int offset)
 		why,
 		
                 ch->uid(),                      // identifier for this event
-		
-		((ch->ptype() == PT_MAC) ? (
-		  (mh->dh_fc.fc_subtype == MAC_Subtype_RTS) ? "RTS"  :
-		  (mh->dh_fc.fc_subtype == MAC_Subtype_CTS) ? "CTS"  :
-		  (mh->dh_fc.fc_subtype == MAC_Subtype_ACK) ? "ACK"  :
-		  //<zheng: add for 802.15.4>
-		  (mh->dh_fc.fc_subtype == MAC_Subtype_Beacon) ? "BCN"  :		//Beacon
-		  (mh->dh_fc.fc_subtype == MAC_Subtype_Command_AssoReq) ? "CM1"  :	//CMD: Association request
-		  (mh->dh_fc.fc_subtype == MAC_Subtype_Command_AssoRsp) ? "CM2"  :	//CMD: Association response
-		  (mh->dh_fc.fc_subtype == MAC_Subtype_Command_DAssNtf) ? "CM3"  :	//CMD: Disassociation notification
-		  (mh->dh_fc.fc_subtype == MAC_Subtype_Command_DataReq) ? "CM4"  :	//CMD: Data request
-		  (mh->dh_fc.fc_subtype == MAC_Subtype_Command_PIDCNtf) ? "CM5"  :	//CMD: PAN ID conflict notification
-		  (mh->dh_fc.fc_subtype == MAC_Subtype_Command_OrphNtf) ? "CM6"  :	//CMD: Orphan notification
-		  (mh->dh_fc.fc_subtype == MAC_Subtype_Command_BconReq) ? "CM7"  :	//CMD: Beacon request
-		  (mh->dh_fc.fc_subtype == MAC_Subtype_Command_CoorRea) ? "CM8"  :	//CMD: Coordinator realignment
-		  (mh->dh_fc.fc_subtype == MAC_Subtype_Command_GTSReq) ? "CM9"  :	//CMD: GTS request
-		  //</zheng: add for 802.15.4>
-		  "UNKN") :
-		 (ch->ptype() == PT_SMAC) ? (
-		  (sh->type == RTS_PKT) ? "RTS" :
-		  (sh->type == CTS_PKT) ? "CTS" :
-		  (sh->type == ACK_PKT) ? "ACK" :
-		  (sh->type == SYNC_PKT) ? "SYNC" :
-		  "UNKN") : 
-		 packet_info.name(ch->ptype())),
-		ch->size());
+
+//		((ch->ptype() == PT_MAC ) ? (
+//		  (mh->dh_fc.fc_subtype == MAC_Subtype_RTS) ? "RTS"  :
+//		  (mh->dh_fc.fc_subtype == MAC_Subtype_CTS) ? "CTS"  :
+//		  (mh->dh_fc.fc_subtype == MAC_Subtype_ACK) ? "ACK"  :
+//		  //<zheng: add for 802.15.4>
+//		  (mh->dh_fc.fc_subtype == MAC_Subtype_Beacon) ? "BCN"  :		//Beacon
+//		  (mh->dh_fc.fc_subtype == MAC_Subtype_Command_AssoReq) ? "CM1"  :	//CMD: Association request
+//		  (mh->dh_fc.fc_subtype == MAC_Subtype_Command_AssoRsp) ? "CM2"  :	//CMD: Association response
+//		  (mh->dh_fc.fc_subtype == MAC_Subtype_Command_DAssNtf) ? "CM3"  :	//CMD: Disassociation notification
+//		  (mh->dh_fc.fc_subtype == MAC_Subtype_Command_DataReq) ? "CM4"  :	//CMD: Data request
+//		  (mh->dh_fc.fc_subtype == MAC_Subtype_Command_PIDCNtf) ? "CM5"  :	//CMD: PAN ID conflict notification
+//		  (mh->dh_fc.fc_subtype == MAC_Subtype_Command_OrphNtf) ? "CM6"  :	//CMD: Orphan notification
+//		  (mh->dh_fc.fc_subtype == MAC_Subtype_Command_BconReq) ? "CM7"  :	//CMD: Beacon request
+//		  (mh->dh_fc.fc_subtype == MAC_Subtype_Command_CoorRea) ? "CM8"  :	//CMD: Coordinator realignment
+//		  (mh->dh_fc.fc_subtype == MAC_Subtype_Command_GTSReq) ? "CM9"  :	//CMD: GTS request
+//		  //</zheng: add for 802.15.4>
+//		  "UNKN") :
+//		 (ch->ptype() == PT_SMAC) ? (
+//		  (sh->type == RTS_PKT) ? "RTS" :
+//		  (sh->type == CTS_PKT) ? "CTS" :
+//		  (sh->type == ACK_PKT) ? "ACK" :
+//		  (sh->type == SYNC_PKT) ? "SYNC" :
+//		  "UNKN") :
+		 packet_info.name(ch->ptype()),ch->size());
 	
 	offset = strlen(pt_->buffer());
 
