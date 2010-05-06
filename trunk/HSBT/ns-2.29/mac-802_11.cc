@@ -954,10 +954,13 @@ Mac802_11::sendACK(int dst)
 void
 Mac802_11::sendDATA(Packet *p)
 {
+
 	hdr_cmn* ch = HDR_CMN(p);
 	struct hdr_mac802_11* dh = HDR_MAC802_11(p);
 
-	assert(pktTx_ == 0);
+	//FixME: 
+	//printf("I'm %i send MAC DATA to %i \n",addr(),(u_int32_t)ETHER_ADDR(dh->dh_ra));
+	//assert(pktTx_ == 0);
 
 	/*
 	 * Update the MAC header
