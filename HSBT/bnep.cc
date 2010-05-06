@@ -436,7 +436,11 @@ void BNEP::bcast(Packet * p)
 	if (!_conn[i]) {
 	    continue;
 	}
-	_conn[i]->cid->enque(p->copy());
+	printf("BNEP L2cap channel highspeed = %i\n",_conn[i]->cid->_connhand->highSpeed_);
+	if(_conn[i]->cid->highSpeed_)
+		_conn[i]->cid->send(p->copy());
+	else
+		_conn[i]->cid->enque(p->copy());
     }
     Packet::free(p);
 }
@@ -589,10 +593,10 @@ int BNEP::findPort(int macDA)
     }
 }
 
-BNEP::Connection * BNEP::lookupConnection(bd_addr_t addr,bool highSpeed)
+BNEP::Connection * BNEP::lookupConnection(bd_addr_t addr)
 {
     for (int i = 0; i < num_conn_max; i++) {
-	if (_conn[i] && _conn[i]->daddr == addr && _conn[i]->cid->highSpeed_ == highSpeed) {
+	if (_conn[i] && _conn[i]->daddr == addr) {
 	    return _conn[i];
 	}
     }
@@ -609,10 +613,10 @@ BNEP::Connection * BNEP::lookupConnection(L2CAPChannel * ch)
     return NULL;
 }
 
-L2CAPChannel *BNEP::lookupChannel(bd_addr_t addr,bool highSpeed)
+L2CAPChannel *BNEP::lookupChannel(bd_addr_t addr)
 {
     for (int i = 0; i < num_conn_max; i++) {
-	if (_conn[i] && _conn[i]->cid->remote() == addr &&  _conn[i]->cid->highSpeed_ == highSpeed) {
+	if (_conn[i] && _conn[i]->cid->remote() == addr) {
 	    return _conn[i]->cid;
 	}
     }
@@ -670,10 +674,12 @@ void BNEP::schedule_send(int slots)
 
 void BNEP::channel_setup_complete(L2CAPChannel * ch)
 {
+
     Connection *c = lookupConnection(ch);
     if (!c) {
 	c = addConnection(ch);
     }
+    c->daddr = ch->remote();
     _br_table.add(c->daddr, c->port);
     c->ready_ = 1;
 
@@ -681,42 +687,44 @@ void BNEP::channel_setup_complete(L2CAPChannel * ch)
     c->dump(stdout);
     fprintf(stdout, "\n");
 
-    if (node_->scatFormator_) {
-	node_->scatFormator_->connected(ch->remote());
-	// return;
-    }
-    // Add arp stuff to LL arp table, if it exists.
-    // TODO 
+    if(!ch->highSpeed_){
+		if (node_->scatFormator_) {
+		node_->scatFormator_->connected(ch->remote());
+		// return;
+		}
+		// Add arp stuff to LL arp table, if it exists.
+		// TODO
 
-    // Add routing table entry.
-    // add SchedEntry.
-    // TODO 
+		// Add routing table entry.
+		// add SchedEntry.
+		// TODO
 
-    if (c->cid->connhand()->link->piconet->isMaster()) {
-	becomeGN();
-	_masterPort++;
-	if (_masterPort == 1) {
-	    enableScan(30 * 1E-3);
-	    addSchedEntry(c->cid->connhand()->link->piconet, 1);
-	    if (_ev.uid_ <= 0) {
-		// piconet_sched();
-	    }
-	}
+		if (c->cid->connhand()->link->piconet->isMaster()) {
+		becomeGN();
+		_masterPort++;
+		if (_masterPort == 1) {
+			enableScan(30 * 1E-3);
+			addSchedEntry(c->cid->connhand()->link->piconet, 1);
+			if (_ev.uid_ <= 0) {
+			// piconet_sched();
+			}
+		}
 
-    } else {
-	becomePANU();
-#if 0
-	enableScan(30 * 1E-3);
-	addSchedEntry(c->cid->connhand()->link->piconet, 1);
-	if (_ev.uid_ <= 0) {
-	    piconet_sched();
-	}
-#endif
-    }
+		} else {
+		becomePANU();
+	#if 0
+		enableScan(30 * 1E-3);
+		addSchedEntry(c->cid->connhand()->link->piconet, 1);
+		if (_ev.uid_ <= 0) {
+			piconet_sched();
+		}
+	#endif
+		}
 
-    if (!schedsend) {
-	schedule_send(12);
-	schedsend = 1;
+		if (!schedsend) {
+		schedule_send(12);
+		schedsend = 1;
+		}
     }
     if (c->_nscmd) {
 	Tcl & tcl = Tcl::instance();
@@ -756,8 +764,9 @@ BNEP::Connection * BNEP::connect(bd_addr_t addr, hdr_bt::packet_type pt,
 {
 	printf("bnep high speed %i/n",highSpeed);
     Connection *c;
-    if ((c = lookupConnection(addr,highSpeed))) {
-	return c;
+    if ((c = lookupConnection(addr))) {
+    	if(c->cid->highSpeed_ == highSpeed)
+    		return c;
     }
 #if 0
     if (pt < hdr_bt::NotSpecified) {
@@ -850,7 +859,11 @@ void BNEP::sendDown(Packet * p, Handler * h)
     } else if ((slot = findPortByIp(ch->next_hop())) >= 0) {
 	bneph->type = BNEP_COMPRESSED_ETHERNET;
 	ch->size() += bneph->hdr_len();
-	_conn[slot]->cid->enque(p);
+	printf("BNEP L2cap channel highspeed = %i\n",_conn[slot]->cid->_connhand->highSpeed_);
+	if(_conn[slot]->cid->highSpeed_)
+			_conn[slot]->cid->send(p);
+		else
+			_conn[slot]->cid->enque(p);
     } else {
 	// A possible way to handle it is to bcast the pkt.  However,
 	// choose to drop it at this moment.
