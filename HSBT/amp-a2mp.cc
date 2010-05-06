@@ -460,6 +460,8 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 			{
 				printf("success\n");
 				pal_[c->localPalID_]->HCI_Write_Remote_AMP_Assoc(c,req->amp_assoc_);
+				c->ready_ = 1;
+				A2MP_CreatePhysicalLinkRsp(p,ch,c,status);
 			}
 			else{
 				printf("Unable to start MAC\n");
@@ -467,7 +469,7 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 			}
 		}
 
-		A2MP_CreatePhysicalLinkRsp(p,ch,c,status);
+
 	}
 		break;
 
