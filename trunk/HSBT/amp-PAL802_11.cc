@@ -121,6 +121,7 @@ void PAL802_11::sendDown(AMPConnection* conn,Packet *p){
 	 //printf("Sending MAC Packet to %i\n",((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_);
 	 printf("I'm %i Sending MAC Packet to %i with BT daddr_%i\n",mac_->addr(),conn->dAMPaddr_,conn->dBTaddr_);
 	hdr_cmn *ch = HDR_CMN(p);
+	 printf("PAL uid %i\n",ch->uid());
 	hdr_bt *bh = HDR_BT(p);
 	hdr_l2cap *lh = &bh->l2caphdr;
 	hdr_mac *mh = HDR_MAC(p);
@@ -132,7 +133,7 @@ void PAL802_11::sendDown(AMPConnection* conn,Packet *p){
 	 //bh->connHand_= conn->cid_->connhand();
 	 //u_int8_t* dap = ((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_;
 	//char *mh = (char*)p->access(hdr_mac::offset_);
-
+	 printf("PAL send to mac with bnep src = %i and dst = %i with type = %i\n",mh->macSA(),mh->macDA(),ch->ptype());
 	if (mh->macDA() == (int) MAC_BROADCAST)
 	{
 		printf("\n\n\nBNEP BroadCast\n\n\n");
@@ -154,11 +155,13 @@ void PAL802_11::sendDown(AMPConnection* conn,Packet *p){
 	sh->identifier_ = 1;
 	sh->Length_ = sizeof(p);
 
-
+	//Handler* h =0;
+	//((Mac802_11*)mac_)->recv(p,h);
 	//send auth packet
 	Scheduler& s = Scheduler::instance();
 	// let mac decide when to take a new packet from the queue.
-	s.schedule(((Mac802_11*)mac_), p, 0);
+
+	s.schedule(((Mac802_11*)mac_), p,0);
 	}
 
 }
@@ -406,7 +409,7 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 
 		switch (sh->protocol_) {
 		case L2CAP_DATA:
-				sendUp(p,callback);
+				sendUp(p->copy(),callback);
 			break;
 		case Link_Supervision_Request:{
 			AMPConnection* conn = a2mp_->lookupConnection(mac_->hdr_src(mh,-2));
@@ -441,6 +444,6 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 						mac_->hdr_dst(mh,-2), sh->protocol_);
 			}
 		//if(ch->ptype() != PT_AODV)
-			//Packet::free(p);
+			Packet::free(p);
 
  }
