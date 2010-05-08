@@ -436,11 +436,11 @@ void BNEP::bcast(Packet * p)
 	if (!_conn[i]) {
 	    continue;
 	}
-	printf("BNEP L2cap channel highspeed = %i\n",_conn[i]->cid->_connhand->highSpeed_);
-	if(_conn[i]->cid->highSpeed_)
-		_conn[i]->cid->send(p->copy());
-	else
-		_conn[i]->cid->enque(p->copy());
+	_conn[i]->cid->send(p->copy());
+//	if(_conn[i]->cid->highSpeed_)
+//		_conn[i]->cid->send(p->copy());
+//	else
+//		_conn[i]->cid->enque(p->copy());
     }
     Packet::free(p);
 }
@@ -859,11 +859,11 @@ void BNEP::sendDown(Packet * p, Handler * h)
     } else if ((slot = findPortByIp(ch->next_hop())) >= 0) {
 	bneph->type = BNEP_COMPRESSED_ETHERNET;
 	ch->size() += bneph->hdr_len();
-	printf("BNEP L2cap channel highspeed = %i\n",_conn[slot]->cid->_connhand->highSpeed_);
-	if(_conn[slot]->cid->highSpeed_)
-			_conn[slot]->cid->send(p);
-		else
-			_conn[slot]->cid->enque(p);
+	_conn[slot]->cid->send(p);
+//	if(_conn[slot]->cid->highSpeed_)
+//			_conn[slot]->cid->send(p);
+//		else
+//			_conn[slot]->cid->enque(p);
     } else {
 	// A possible way to handle it is to bcast the pkt.  However,
 	// choose to drop it at this moment.
@@ -935,7 +935,8 @@ void BNEP::sendUp(Packet * p, Handler * h)
 	uptarget_->recv(p);
 	return;
     } else if ((slot = findPort(mh->macDA())) >= 0) {
-	_conn[slot]->cid->enque(p);
+	//_conn[slot]->cid->enque(p);
+    	_conn[slot]->cid->send(p);
     } else {			// MAC_BROADCAST
 	uptarget_->recv(p);
 	bcast(p);
