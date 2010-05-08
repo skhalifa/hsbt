@@ -1,6 +1,6 @@
 set val(mac)            Mac/BNEP                 ;# MAC type
-set val(nn)             8                        ;# number of mobilenodes
-set val(numberOfMACs)   11                        ;# total number of MACs
+set val(nn)             2                        ;# number of mobilenodes
+set val(numberOfMACs)   4                        ;# total number of MACs
 set val(palType) PAL/802_11
 set val(prop)   Propagation/TwoRayGround   ;# radio-propagation model
 set val(chan)   Channel/WirelessChannel    ;# channel type
@@ -39,7 +39,7 @@ for {set i 0} {$i < $val(nn) } {incr i} {
 	#set a2mp [$node($i) set a2mp_]
 	$node(0) add-PAL $val(palType) $topo $chan $val(prop)
 $node(1) add-PAL $val(palType) $topo $chan $val(prop)
-$node(2) add-PAL $val(palType) $topo $chan $val(prop)
+#$node(2) add-PAL $val(palType) $topo $chan $val(prop)
 	##################################################
 set a2mp0 [$node(0) set a2mp_]
 
@@ -70,8 +70,9 @@ $ns_ at 0.1 "$node(0) make-hs-connection $node(1)"
 #$ns_ at 0.1 "$node(0) make-bnep-connection $node(1) DH5 DH5 noqos $ifq"
 #$ns_ at 0.1 "$node(0) make-bnep-connection $node(1)"
 
-$ns_ at 10.0 "$ftp2 send 4000000000"
-#$ns_ at 10.0 "$ftp2 stop"
+#$ns_ at 10.0 "$ftp2 send 4000000000"
+$ns_ at 1.0 "$ftp2 start"
+$ns_ at 50.0 "$ftp2 stop"
 
 #===================================
 #        Termination        
@@ -95,7 +96,7 @@ proc finish {} {
 #$ns_ at 1 "$a2mp0 discover $node(6)"
 #$ns_ at 5 "$a2mp0 discover $node(1)"
 #$ns_ at 10 "$a2mp0 discover $node(5)"
-$ns_ at 150 "$ns_ halt"
+$ns_ at 60 "$ns_ halt"
 
 $ns_ run
 
