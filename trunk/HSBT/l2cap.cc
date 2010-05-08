@@ -213,59 +213,60 @@ void L2CAPChannel::enque(Packet * p)
 
 void L2CAPChannel::send(Packet * p)
 {
-	if(!_connhand->highSpeed_ ){
-		if (!_connhand || !_connhand->link) {
-		return;
+	if(_connhand)
+		if(!_connhand->highSpeed_ ){
+			if (!_connhand || !_connhand->link) {
+			return;
+			}
+
+			hdr_cmn *ch = HDR_CMN(p);
+			hdr_bt *bh = HDR_BT(p);
+			// hdr_l2cap *lh = &bh->u.l2cap;
+			hdr_l2cap *lh = &bh->l2caphdr;
+
+			lh->length = ch->size();
+			ch->size() += 4;
+			bh->ph.l_ch = L_CH_L2CAP_START;
+			bh->connHand_ = _connhand;
+
+			if (lh->cid == L2CAP_SIG_CID) {
+			bh->comment("L2");
+			} else if (lh->cid == L2CAP_BCAST_CID) {
+			bh->comment("Lb");
+			} else {
+			lh->cid = _rcid;
+			bh->comment("LD");
+			}
+			_connhand->link->enqueue(p);
 		}
+		else
+		{
+			if (!_connhand || !_connhand->ampConnection_ || !_connhand->ampConnection_->ready_ ) {
+			return;
+			}
 
-		hdr_cmn *ch = HDR_CMN(p);
-		hdr_bt *bh = HDR_BT(p);
-		// hdr_l2cap *lh = &bh->u.l2cap;
-		hdr_l2cap *lh = &bh->l2caphdr;
+			hdr_cmn *ch = HDR_CMN(p);
+			hdr_bt *bh = HDR_BT(p);
+			// hdr_l2cap *lh = &bh->u.l2cap;
+			hdr_l2cap *lh = &bh->l2caphdr;
 
-		lh->length = ch->size();
-		ch->size() += 4;
-		bh->ph.l_ch = L_CH_L2CAP_START;
-		bh->connHand_ = _connhand;
+			lh->length = ch->size();
+			ch->size() += 4;
+			bh->ph.l_ch = L_CH_L2CAP_START;
+			bh->connHand_ = _connhand;
 
-		if (lh->cid == L2CAP_SIG_CID) {
-		bh->comment("L2");
-		} else if (lh->cid == L2CAP_BCAST_CID) {
-		bh->comment("Lb");
-		} else {
-		lh->cid = _rcid;
-		bh->comment("LD");
+			if (lh->cid == L2CAP_SIG_CID) {
+			bh->comment("L2");
+			} else if (lh->cid == L2CAP_BCAST_CID) {
+			bh->comment("Lb");
+			} else {
+			lh->cid = _rcid;
+			bh->comment("LD");
+			}
+			//send the packet down to the PAL using the A2MP connection
+			l2cap_->a2mp_->pal_[_connhand->ampConnection_->localPalID_]->sendDown(_connhand->ampConnection_,p);
+
 		}
-		_connhand->link->enqueue(p);
-	}
-	else
-	{
-		if (!_connhand || !_connhand->ampConnection_) {
-		return;
-		}
-
-		hdr_cmn *ch = HDR_CMN(p);
-		hdr_bt *bh = HDR_BT(p);
-		// hdr_l2cap *lh = &bh->u.l2cap;
-		hdr_l2cap *lh = &bh->l2caphdr;
-
-		lh->length = ch->size();
-		ch->size() += 4;
-		bh->ph.l_ch = L_CH_L2CAP_START;
-		bh->connHand_ = _connhand;
-
-		if (lh->cid == L2CAP_SIG_CID) {
-		bh->comment("L2");
-		} else if (lh->cid == L2CAP_BCAST_CID) {
-		bh->comment("Lb");
-		} else {
-		lh->cid = _rcid;
-		bh->comment("LD");
-		}
-		//send the packet down to the PAL using the A2MP connection
-		l2cap_->a2mp_->pal_[_connhand->ampConnection_->localPalID_]->sendDown(_connhand->ampConnection_,p);
-
-	}
 }
 
 void L2CAPChannel::linkDetached()
@@ -835,6 +836,10 @@ int L2CAP::connection_complete_event(ConnectionHandle * connh,
 void L2CAP::_channel_setup_complete(L2CAPChannel * ch)
 {
     ch->ready_ = 1;
+    if(ch->highSpeed_)
+    {
+    	ch->_connhand->ampConnection_->cid_->disconnect('0');
+    }
     if (bnep_ && ch->psm() == PSM_BNEP) {
 	bnep_->channel_setup_complete(ch);
 	return;
