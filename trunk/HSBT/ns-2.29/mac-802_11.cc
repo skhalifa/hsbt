@@ -515,7 +515,9 @@ Mac802_11::tx_resume()
 {
 	double rTime;
 	assert(mhSend_.busy() == 0);
-	assert(mhDefer_.busy() == 0);
+	//assert(mhDefer_.busy() == 0);
+	if(mhDefer_.busy() != 0)
+		return;
 
 	if(pktCTRL_) {
 		/*
@@ -956,11 +958,24 @@ Mac802_11::sendDATA(Packet *p)
 {
 
 	hdr_cmn* ch = HDR_CMN(p);
+
+		 printf("sendData uid %i\n",ch->uid());
 	struct hdr_mac802_11* dh = HDR_MAC802_11(p);
 
+//	if(pktTx_ != 0)
+//	{
+////		Scheduler& s = Scheduler::instance();
+////			// let mac decide when to take a new packet from the queue.
+////			s.schedule(this, p, 1);
+//		hdr_cmn* ch1 = HDR_CMN(pktTx_);
+//		struct hdr_mac802_11* dh1 = HDR_MAC802_11(pktTx_);
+//		hdr_mac* mh1 = HDR_MAC(pktTx_);
+//		printf("Error I'm %i send MAC DATA to %i with src = %i and dst = %i of type = %i\n",addr(),(u_int32_t)ETHER_ADDR(dh1->dh_ra),mh1->macSA(),mh1->macDA(),ch1->ptype());
+//		return;
+//	}
 	//FixME: 
 	//printf("I'm %i send MAC DATA to %i \n",addr(),(u_int32_t)ETHER_ADDR(dh->dh_ra));
-	//assert(pktTx_ == 0);
+	assert(pktTx_ == 0);
 
 	/*
 	 * Update the MAC header
@@ -1048,6 +1063,7 @@ Mac802_11::RetransmitRTS()
 void
 Mac802_11::RetransmitDATA()
 {
+	printf("\n\nRetransmitting Data\n\n");
 	struct hdr_cmn *ch;
 	struct hdr_mac802_11 *mh;
 	u_int32_t *rcount, thresh;
@@ -1125,9 +1141,15 @@ Mac802_11::RetransmitDATA()
 void
 Mac802_11::send(Packet *p, Handler *h)
 {
+	if(pktTx_ != 0){
+		Scheduler& s = Scheduler::instance();
+		s.schedule(this, p,0.001);
+		return;
+	}
 	double rTime;
 	struct hdr_mac802_11* dh = HDR_MAC802_11(p);
-
+	hdr_cmn *ch = HDR_CMN(p);
+		 printf("send uid %i\n",ch->uid());
 	EnergyModel *em = netif_->node()->energy_model();
 	if (em && em->sleep()) {
 		em->set_node_sleep(0);
