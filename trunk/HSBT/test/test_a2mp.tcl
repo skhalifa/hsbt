@@ -50,10 +50,10 @@ for {set i 0} {$i < $val(nn) } {incr i} {
 	}
 	set bb($i) [$node($i) set bb_]
 	#$bb($i) set energyMin_ 0.1
-	$node($i) set-rate 1	;# set 1mb high rate
+#	$node($i) set-rate 1	;# set 1mb high rate
     	$bb($i) set energy_ 3 ;# 3 watt hour
     	$bb($i) set activeEnrgConRate_ 1.667E-5 ;# 60 mwh
-	$bb($i) set ver_ 12
+#	$bb($i) set ver_ 12
 #	$ns_ at [lindex $StartTime $i] "$node($i) on"
 
 }
