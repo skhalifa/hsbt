@@ -197,21 +197,43 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 		set mac		[new Mac/802_11]		;# mac layer
         	set ant		[new Antenna/OmniAntenna]
 		
+#		The following parameters are set to simulate 802.11b as specified in http://www.joshuarobinson.net/docs/ns-802_11b.html
+#		and Simulate 802.11b Channel within NS2  by Wu Xiuchao, SOC, NUS wuxiucha@comp.nus.edu.sg (http://www.comp.nus.edu.sg/~wuxiucha/research/reactive/publication/Simulate80211ChannelWithNS2.pdf)
 		$ant set Gt_ 1 ;#//Transmit antenna gain
 		$ant set Gr_ 1 ;#//Receive antenna gain
 		$netif set L_ 1.0 ;#//System Loss Factor
 		$netif set freq_ 2.462e9 ;#//channel-11. 2.463GHz
-		$netif set bandwidth_ 20Mb ;#//Data Rate
+		$netif set bandwidth_ 11Mb ;#//Data Rate
 		$netif set Pt_ 0.031622777 ;#//Transmit Power
 		$netif set CPThresh_ 10.0 ;#//Collision Threshold
 		$netif set CSThresh_ 5.011872e-12 ;#//Carrier Sense Power
 		$netif set RXThresh_ 5.82587e-09 ;#//Receive Power Threshold; calculated under TwoRayGround model by tools from NS2.
-		$mac set RTSThreshold_ 3000 ;#send RTS for packets larger than 3000 byte (disable RTS)
 		$mac set ShortRetryLimit_       7               ;# retransmittions
 		$mac set LongRetryLimit_        4               ;# retransmissions
+#		Almost all commercial 802.11b cards have the RTS/CTS exchange turned off by default. 
+#		This is not a bad decision since I think most people's home wlan networks are simple enough 
+#		so that the RTS/CTS really is just unnecessary overhead. 
+#		NS by default has this feature turned on, so we probably want to tell NS not to use this feature. 
+#		This means that an RTS will only be sent for packets that are bigger than 3000 bytes, which should be never. 
+#		Note: if you want RTS/CTS on, then set this value to zero.
+		$mac set RTSThreshold_ 3000 ;#send RTS for packets larger than 3000 byte (disable RTS)
+#		Every packet is sent with a preamble, which is just a known pattern of bits at the beginning of the packet 
+#		so that the receiver can sync up and be ready for the real data. 
+#		This preamble must be sent at the basic rate (1 Mbps), according to the official standard. 
+#		But there are two different kinds of preambles, short and long - referring to the length of the sync field. 
+#		The long preamble has a field size of 128 bits, while the short preamble is only 56 bits. 
+#		I would guess this short preamble option came about as hardware progressed and transceivers got better at locking on to a signal. 
+#		NS is set by default to use the long preamble. 
+#		To support short preambles in NS.
+#		Note: there are 16 other bits in the preamble that aren't affected by the short/long distinction. 
+#		To go back to long, change this value to 144.
 		$mac set PreambleLength_        72             ;# 72 bit
-		$mac set dataRate_ 20Mb
-		
+#		NS, by default, has the data rate for the MAC set at 2 Mbps. 
+#		But cards are faster now. My cards are 802.11b, which means they're 11 Mbps, 
+#		The card can send at 1, 2, 5.5, or 11 Mbps.  
+#		Mobile nodes will always send their packets at dataRate_. 
+		$mac set dataRate_ 11Mb
+		$mac set basicRate_ 1Mb ;#Rate for Control Frames
 		
 		set namfp [$ns get-nam-traceall]
 		
