@@ -106,7 +106,7 @@ void PAL802_11::sendUp(Packet *p, Handler *h){
 	hdr_bt *bh = HDR_BT(p);
 	AMPConnection* conn = a2mp_->lookupConnection(bh->sender);
 
-	//printf("I'm %i sending up with connh dest add  %i \n",mac_->addr(),conn->logicalChannel_->address());
+	//printf("I'm %i sending up with my connh dest add  %i and the recieved connh dest add %i\n",mac_->addr(),conn->logicalChannel_->address(),bh->connHand_->ampConnection_->logicalChannel_->address());
 	if(conn)
 	{
 		bh->connHand_ = conn->logicalChannel_->connhand();
@@ -129,7 +129,7 @@ void PAL802_11::sendDown(AMPConnection* conn,Packet *p){
 
 	 bh->ph.length = lh->length+4;//Temp Hack
 	 bh->sender = mac_->addr();
-
+	 //bh->connHand_ = conn->logicalChannel_->connhand();
 	 //bh->connHand_= conn->cid_->connhand();
 	 //u_int8_t* dap = ((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_;
 	//char *mh = (char*)p->access(hdr_mac::offset_);
