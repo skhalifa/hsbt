@@ -575,8 +575,27 @@ Simulator instproc node args {
 	if { [info exists macType_] && \
 	    ($macType_ == "Mac/BNEP" || $macType_ == "Mac/Bluetooth") } {
 		# puts "$macType_"
+		     $self instvar energyModel_ initialEnergy_ \
+	    			level1_ level2_ 
+		    
 		set node [eval new Node/BTNode $args]
-		
+		    
+	    	################## Add Energy Model for the AMP controllers #############
+		if [info exists energyModel_] {
+			if  [info exists level1_] {
+				set l1 $level1_
+			} else {
+				set l1 0.5
+			}
+			if  [info exists level2_] {
+				set l2 $level2_
+			} else {
+				set l2 0.2
+			}
+			$node addenergymodel [new $energyModel_ $node \
+					$initialEnergy_ $l1 $l2]
+	        }		
+			    		
 		return $node
 	} else {
 		set node [eval new [Simulator set node_factory_] $args]
