@@ -903,7 +903,6 @@ void L2CAP::connection_highSpeed(AMPConnection* conn,bd_addr_t bd_addr,int psm)
 		connection_complete_event(ch->_connhand, 0, 1);
 	}
 	connh->ready_ = 1;
-
 	}
 }
 int L2CAP::L2CA_ConnectRsp(ConnectionHandle * connh,
@@ -915,9 +914,13 @@ int L2CAP::L2CA_ConnectRsp(ConnectionHandle * connh,
     //// better scheme ????
     // When a link is up, there is always a Channel there.
     // We are here reusing the Command/Signal Channel.
-    if (!connh->chan->ready_) {
-	lcid = connh->chan;
-
+    //if (!connh->chan->ready_) {
+    L2CAPChannel* l;
+	for(l = connh->chan;l!=NULL && l->ready_;l=l->next())
+	{}
+	if(l!=NULL && !l->ready_)
+	{
+    lcid = l;
 	// Multiple Channel on a single ConnHand.
     } else {
 	lcid = new L2CAPChannel(this, 0, connh, NULL,connh->chan->_bd_addr);
