@@ -109,7 +109,11 @@ A2MP set ampNumber_ 0
 
 Node/BTNode instproc init args {
         $self instvar mac_ bnep_ sdp_ a2mp_ l2cap_ lmp_ bb_ phy_ ll_ \
-		arptable_ classifier_ dmux_ entry_ ragent_ 
+		arptable_ classifier_ dmux_ entry_ ragent_ \
+		energyModel_ initialEnergy_ txPower_ rxPower_ \
+	    	idlePower_ sleepPower_ transitionPower_ transitionTime_ \
+	    	level1_ level2_
+	
         eval $self next $args
 
 	set bnep_ [new Mac/BNEP]
@@ -165,7 +169,8 @@ Node/BTNode instproc init args {
 	}
 
 	$classifier_ defaulttarget $ll_
-
+	
+	########################## Setup up the Node ############################
 	$self setup [AddrParams addr2id $args] $phy_ $bb_ $lmp_ $l2cap_ $bnep_ $sdp_ $a2mp_
 }
 
@@ -180,7 +185,9 @@ Node/BTNode instproc init args {
 #set chan [new $val(chan)];#Create wireless channel
 #$node add-PAL $val(palType) $topo $chan $val(prop)
 		
-Node/BTNode instproc add-PAL {palType topo channel pmodel} {
+Node/BTNode instproc add-PAL {palType topo channel pmodel \
+				txPower_ rxPower_ idlePower_ sleepPower_ \
+				transitionPower_ transitionTime_ } {
 	if {$palType == "PAL/802_11"} {
 
 		set a2mp_ [$self set a2mp_]
@@ -405,6 +412,34 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel} {
 		$netif node $self		;# Bind node <---> interface (checked (mac/wirelessphy.cc): OK)
 		$netif antenna $ant
 		$netif NodeOff
+		
+		
+		#
+		# Network interface energy model
+		#
+		# set transmission power
+	        if [info exists txPower_] {
+			$netif setTxPower $txPower_
+	        }
+		# set receiving power
+	        if [info exists rxPower_] {
+			$netif setRxPower $rxPower_
+	        }
+		# set idle power -- Chalermek
+	        if [info exists idlePower_] {
+			$netif setIdlePower $idlePower_
+	        }
+	#
+		if [info exists sleepPower_] {
+			$netif setSleepPower $sleepPower_
+	        }
+		if [info exists transitionPower_] {
+			$netif setTransitionPower $transitionPower_
+	        }
+		if [info exists transitionTime_] {
+			$netif setTransitionTime $transitionTime_
+	        }
+		
 		#
 		# Physical Channel
 		#
