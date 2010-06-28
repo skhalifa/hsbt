@@ -70,6 +70,8 @@ BTNode::BTNode() :
 		chain_->next_ = this;
 		chain_ = this;
 	}
+
+	 //bind("amp_energy_", &this->energy_model_->energy_);
 }
 
 // Trace in UCBT is handled differently from the main ns part.
@@ -304,8 +306,41 @@ int BTNode::command(int argc, const char * const *argv) {
 		} else if (!strcasecmp(argv[1], "notCheckWiFi")) {
 			// Baseband::check_wifi_ = 0;
 			return TCL_OK;
+		} else if (!strcasecmp(argv[1], "ampEnergy")) {
+			if(this->energy_model() != NULL){
+				tcl.resultf("%f",energy_model()->energy());
+			}else
+				tcl.resultf("%f",0.0);
+			return TCL_OK;
 		}
-
+		else if (!strcasecmp(argv[1], "ampEnergyIdle")) {
+			if(this->energy_model() != NULL){
+				tcl.resultf("%f",energy_model()->ei());
+			}else
+				tcl.resultf("%f",0.0);
+			return TCL_OK;
+		}
+		else if (!strcasecmp(argv[1], "ampEnergyRX")) {
+			if(this->energy_model() != NULL){
+				tcl.resultf("%f",energy_model()->er());
+			}else
+				tcl.resultf("%f",0.0);
+			return TCL_OK;
+		}
+		else if (!strcasecmp(argv[1], "ampEnergyTX")) {
+			if(this->energy_model() != NULL){
+				tcl.resultf("%f",energy_model()->et());
+			}else
+				tcl.resultf("%f",0.0);
+			return TCL_OK;
+		}
+		else if (!strcasecmp(argv[1], "ampEnergySleep")) {
+			if(this->energy_model() != NULL){
+				tcl.resultf("%f",energy_model()->es());
+			}else
+				tcl.resultf("%f",0.0);
+			return TCL_OK;
+		}
 	} else if (argc == 3) {
 
 		if (!strcmp(argv[1], "make-hs-connection")) {
