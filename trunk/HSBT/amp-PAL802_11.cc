@@ -49,7 +49,7 @@ static class PAL802_11class:public TclClass {
 } class_PAL802_11;
 
 PAL802_11::PAL802_11(){
-	printf("*** PAL 802.11 constructor.\n");
+	//printf("*** PAL 802.11 constructor.\n");
 }
 int PAL802_11::command(int argc, const char*const* argv)
 {
@@ -99,7 +99,7 @@ void PAL802_11::_init(){
 	controllerType_ = Controller_Type_;
 	controllerStatus_ = RadioHasHighCapacityLeft;
 	//physicalLinkState_ = Disconnected;
-	printf("PAL INIT BW = %i\n",Max_Guaranteed_Bandwidth_);
+	//printf("PAL INIT BW = %i\n",Max_Guaranteed_Bandwidth_);
 }
 
 void PAL802_11::sendUp(Packet *p, Handler *h){
@@ -119,9 +119,9 @@ void PAL802_11::sendDown(AMPConnection* conn,Packet *p){
 
 	if(conn->physicalLinkState_ == Connected){
 	 //printf("Sending MAC Packet to %i\n",((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_);
-	 printf("I'm %i Sending MAC Packet to %i with BT daddr_%i\n",mac_->addr(),conn->dAMPaddr_,conn->dBTaddr_);
+	 //printf("I'm %i Sending MAC Packet to %i with BT daddr_%i\n",mac_->addr(),conn->dAMPaddr_,conn->dBTaddr_);
 	hdr_cmn *ch = HDR_CMN(p);
-	 printf("PAL uid %i\n",ch->uid());
+	 //printf("PAL uid %i\n",ch->uid());
 	hdr_bt *bh = HDR_BT(p);
 	hdr_l2cap *lh = &bh->l2caphdr;
 	hdr_mac *mh = HDR_MAC(p);
@@ -133,10 +133,10 @@ void PAL802_11::sendDown(AMPConnection* conn,Packet *p){
 	 //bh->connHand_= conn->cid_->connhand();
 	 //u_int8_t* dap = ((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_;
 	//char *mh = (char*)p->access(hdr_mac::offset_);
-	 printf("PAL send to mac with bnep src = %i and dst = %i with type = %i\n",mh->macSA(),mh->macDA(),ch->ptype());
+	// printf("PAL send to mac with bnep src = %i and dst = %i with type = %i\n",mh->macSA(),mh->macDA(),ch->ptype());
 	if (mh->macDA() == (int) MAC_BROADCAST)
 	{
-		printf("\n\n\nBNEP BroadCast\n\n\n");
+		//printf("\n\n\nBNEP BroadCast\n\n\n");
 		bh->receiver = mh->macDA();
 		mac_->hdr_src((char*)mh, mac_->addr());
 		mac_->hdr_type((char*)mh, ETHERTYPE_IP);
@@ -171,13 +171,13 @@ Version_Info* PAL802_11::HCI_Read_Local_Version_Info(){
 
 AMP_Info* PAL802_11::HCI_Read_Local_AMP_Info()
 {
-	printf("Later BW = %d\n",Max_Guaranteed_Bandwidth_);
+	//printf("Later BW = %d\n",Max_Guaranteed_Bandwidth_);
 	return new AMP_Info(Total_Bandwidth_,Max_Guaranteed_Bandwidth_,Min_Latencay_,Max_PDU_Size_,Controller_Type_,palCapabilities_,AMP_ASSOC_Length_,Max_Flush_Timeout_,Best_Effort_Flush_Timeout_);
 }
 u_int8_t* PAL802_11::HCI_Read_Local_AMP_Assoc()
 {
 	ASSOC802_11** assoc = new ASSOC802_11*[5];
-	printf("My MAC address is %i\n",(u_int8_t*)mac_->addr());
+	//printf("My MAC address is %i\n",(u_int8_t*)mac_->addr());
 	assoc[0] = new ASSOC802_11(assoc[0]->MAC_Address,0x0006,(u_int8_t*)mac_->addr());
 	assoc[1] = new ASSOC802_11(assoc[1]->PAL_Capabilities_list,0x0004,(u_int8_t*)0x00000000);
 	//FixME : read the freq from the netif
@@ -300,7 +300,7 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
  void PAL802_11::MAC_Initiate_Handshake(AMPConnection* conn) {
 	 //This function will make the MAC send a RTS message to the peering MAC
 	 //printf("Sending MAC Packet to %i\n",((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_);
-	 printf("Sending MAC Packet to %i\n",conn->dAMPaddr_);
+	 //printf("Sending MAC Packet to %i\n",conn->dAMPaddr_);
 	 //u_int8_t* dap = ((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_;
 	 //u_int8_t* dap = conn->dAMPaddr_;
 		Packet *p = Packet::alloc(10);
@@ -397,7 +397,7 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 //	 }
 
  void PAL802_11::recv(Packet* p, Handler* callback = 0){
-	 printf("\n\n\nPAL802.11 has just received a packet from MAC 802.11\n\n\n");
+	 //printf("\n\n\nPAL802.11 has just received a packet from MAC 802.11\n\n\n");
 		hdr_pal *sh = HDR_PAL(p);
 		struct hdr_cmn *ch = HDR_CMN(p);
 		char buf[1024];
@@ -405,7 +405,7 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 		uchar* req;
 
 		char *mh = (char*)p->access(hdr_mac::offset_);
-		printf("I'm %i PAL::recv() from %i packet was sent to %i- %s packet with code %x\n",mac_->addr(),mac_->hdr_src(mh,-2), mac_->hdr_dst(mh,-2), sh->dump(buf, len), sh->protocol_);
+		//printf("I'm %i PAL::recv() from %i packet was sent to %i- %s packet with code %x\n",mac_->addr(),mac_->hdr_src(mh,-2), mac_->hdr_dst(mh,-2), sh->dump(buf, len), sh->protocol_);
 
 		switch (sh->protocol_) {
 		case L2CAP_DATA:
@@ -415,7 +415,7 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 			AMPConnection* conn = a2mp_->lookupConnection(mac_->hdr_src(mh,-2));
 			conn->physicalLinkState_=Connected;
 			//Send Link supervision reply
-			 printf("Sending MAC Packet to %i\n",mac_->hdr_src(mh,-2));
+			 //printf("Sending MAC Packet to %i\n",mac_->hdr_src(mh,-2));
 				Packet *rp = Packet::alloc(10);
 				char *rmh = (char*)rp->access(hdr_mac::offset_);
 				mac_->hdr_src(rmh, mac_->hdr_dst(mh,-2));
