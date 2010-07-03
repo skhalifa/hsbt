@@ -578,7 +578,7 @@ void
 AODV::recv(Packet *p, Handler*) {
 struct hdr_cmn *ch = HDR_CMN(p);
 struct hdr_ip *ih = HDR_IP(p);
-printf("AODV recieved packet %i - from %i to %i \n",(ch->ptype()),ih->saddr(),ih->daddr());
+//printf("AODV recieved packet %i - from %i to %i \n",(ch->ptype()),ih->saddr(),ih->daddr());
  assert(initialized());
  //assert(p->incoming == 0);
  // XXXXX NOTE: use of incoming flag has been depracated; In order to track direction of pkt flow, direction_ in hdr_cmn is used instead. see packet.h for details.
