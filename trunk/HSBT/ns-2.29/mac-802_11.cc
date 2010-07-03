@@ -223,7 +223,7 @@ Mac802_11::Mac802_11() :
 
         EOTtarget_ = 0;
        	bss_id_ = IBSS_ID;
-	printf("802.11 MACindex_ in constructor %d\n",index_);
+	//printf("802.11 MACindex_ in constructor %d\n",index_);
 }
 
 
@@ -806,7 +806,7 @@ Mac802_11::check_pktTx()
 void
 Mac802_11::sendRTS(int dst)
 {
-	printf("Sending PAL RTS to %i\n",dst);
+	//printf("Sending PAL RTS to %i\n",dst);
 	Packet *p = Packet::alloc();
 	hdr_cmn* ch = HDR_CMN(p);
 	struct rts_frame *rf = (struct rts_frame*)p->access(hdr_mac::offset_);
@@ -863,7 +863,7 @@ Mac802_11::sendRTS(int dst)
 void
 Mac802_11::sendCTS(int dst, double rts_duration)
 {
-	printf("Sending PAL CTS to %i\n",dst);
+	//printf("Sending PAL CTS to %i\n",dst);
 	Packet *p = Packet::alloc();
 	hdr_cmn* ch = HDR_CMN(p);
 	struct cts_frame *cf = (struct cts_frame*)p->access(hdr_mac::offset_);
@@ -912,8 +912,8 @@ Mac802_11::sendCTS(int dst, double rts_duration)
 void
 Mac802_11::sendACK(int dst)
 {
-	printf("I'm node  %i\n",index_);
-	printf("Sending PAL ACK to %i\n",dst);
+	//printf("I'm node  %i\n",index_);
+	//printf("Sending PAL ACK to %i\n",dst);
 	Packet *p = Packet::alloc();
 	hdr_cmn* ch = HDR_CMN(p);
 	struct ack_frame *af = (struct ack_frame*)p->access(hdr_mac::offset_);
@@ -959,7 +959,7 @@ Mac802_11::sendDATA(Packet *p)
 
 	hdr_cmn* ch = HDR_CMN(p);
 
-		 printf("sendData uid %i\n",ch->uid());
+		 //printf("sendData uid %i\n",ch->uid());
 	struct hdr_mac802_11* dh = HDR_MAC802_11(p);
 
 //	if(pktTx_ != 0)
@@ -1063,7 +1063,7 @@ Mac802_11::RetransmitRTS()
 void
 Mac802_11::RetransmitDATA()
 {
-	printf("\n\nRetransmitting Data\n\n");
+	//printf("\n\nRetransmitting Data\n\n");
 	struct hdr_cmn *ch;
 	struct hdr_mac802_11 *mh;
 	u_int32_t *rcount, thresh;
@@ -1149,7 +1149,7 @@ Mac802_11::send(Packet *p, Handler *h)
 	double rTime;
 	struct hdr_mac802_11* dh = HDR_MAC802_11(p);
 	hdr_cmn *ch = HDR_CMN(p);
-		 printf("send uid %i\n",ch->uid());
+		 //printf("send uid %i\n",ch->uid());
 	EnergyModel *em = netif_->node()->energy_model();
 	if (em && em->sleep()) {
 		em->set_node_sleep(0);
@@ -1194,7 +1194,7 @@ void
 Mac802_11::recv(Packet *p, Handler *h)
 {
 	struct hdr_cmn *hdr = HDR_CMN(p);
-	printf("I'm in node %i\n",index_);
+	//printf("I'm in node %i\n",index_);
 	/*
 	 * Sanity Check
 	 */
@@ -1377,7 +1377,7 @@ Mac802_11::recv_timer()
 void
 Mac802_11::recvRTS(Packet *p)
 {
-	printf("RTS recieved\n");
+	//printf("RTS recieved\n");
 	struct rts_frame *rf = (struct rts_frame*)p->access(hdr_mac::offset_);
 
 	if(tx_state_ != MAC_IDLE) {
@@ -1443,7 +1443,7 @@ Mac802_11::txtime(double psz, double drt)
 void
 Mac802_11::recvCTS(Packet *p)
 {
-	printf("CTS recieved");
+	//printf("CTS recieved");
 	if(tx_state_ != MAC_RTS) {
 		discard(p, DROP_MAC_INVALID_STATE);
 		return;
@@ -1470,7 +1470,7 @@ Mac802_11::recvCTS(Packet *p)
 void
 Mac802_11::recvDATA(Packet *p)
 {
-	printf("data recieved");
+	//printf("data recieved");
 	struct hdr_mac802_11 *dh = HDR_MAC802_11(p);
 	u_int32_t dst, src, size;
 	struct hdr_cmn *ch = HDR_CMN(p);
