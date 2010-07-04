@@ -1143,7 +1143,9 @@ Mac802_11::send(Packet *p, Handler *h)
 {
 	if(pktTx_ != 0){
 		Scheduler& s = Scheduler::instance();
-		s.schedule(this, p,0.001);
+		double sss = (1+Random::uniform());
+		s.schedule(this, p,sss);
+		printf(".");
 		return;
 	}
 	double rTime;
