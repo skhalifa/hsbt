@@ -197,12 +197,21 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel \
 		set ns [Simulator instance]
 		set imepflag [$ns imep-support]
 		
-		
+		set ifq		[new Queue/DropTail/PriQueue]		;# interface queue
 		set pal_	[new $palType]
 		set prop	[new $pmodel]
 		set netif	[new Phy/WirelessPhy]		;# interface
 		set mac		[new Mac/802_11]		;# mac layer
         	set ant		[new Antenna/OmniAntenna]
+		
+		
+			#
+	# Interface Queue
+	#
+	$ifq target $mac
+	$ifq set limit_ 99999999
+	#$pal_ down-target $ifq
+	#$ifq drop-target $drpT
 		
 #		The following parameters are set to simulate 802.11b as specified in http://www.joshuarobinson.net/docs/ns-802_11b.html
 #		and Simulate 802.11b Channel within NS2  by Wu Xiuchao, SOC, NUS wuxiucha@comp.nus.edu.sg (http://www.comp.nus.edu.sg/~wuxiucha/research/reactive/publication/Simulate80211ChannelWithNS2.pdf)
@@ -311,6 +320,7 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel \
 		$pal_ btnode $self
 		$pal_ a2mp $a2mp_
 		$pal_ netif $netif
+		$pal_ ifq $ifq
 	
 		#
 		# Interface Queue
