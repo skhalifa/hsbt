@@ -83,6 +83,10 @@ int PAL802_11::command(int argc, const char*const* argv)
 			netif_ = (WirelessPhy*) TclObject::lookup(argv[2]);
 			return (TCL_OK);
 		}
+		if (strcmp(argv[1], "ifq") == 0) {
+			ifq_ = (NsObject*) TclObject::lookup(argv[2]);
+			return (TCL_OK);
+		}
 	}
 }
 void PAL802_11::on(){
@@ -158,10 +162,24 @@ void PAL802_11::sendDown(AMPConnection* conn,Packet *p){
 	//Handler* h =0;
 	//((Mac802_11*)mac_)->recv(p,h);
 	//send auth packet
-	Scheduler& s = Scheduler::instance();
-	// let mac decide when to take a new packet from the queue.
 
-	s.schedule(((Mac802_11*)mac_), p,0);
+	// let mac decide when to take a new packet from the queue.
+//	((Queue*)ifq_)->enque(p);
+//	Handler* h =0;
+//	bool cont = true;
+//	while(((Queue*)ifq_)->length() > 0 && cont){
+//		Packet *pkt = ((Queue*)ifq_)->deque();
+//		if((((Mac802_11*)mac_)->send(pkt,h)) < 0){
+//			cont = false;
+//			((Queue*)ifq_)->enque(pkt);
+//		}
+//	}
+
+//	printf("Queue size 1 = %i\n",((Queue*)ifq_)->length());
+	Scheduler& s = Scheduler::instance();
+//	s.schedule(((Mac802_11*)mac_), p,0);
+	s.schedule(ifq_, p,0);
+//	printf("Queue size 2 = %i\n",((Queue*)ifq_)->length());
 	}
 
 }

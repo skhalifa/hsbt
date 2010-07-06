@@ -153,6 +153,7 @@ public:
   u_int32_t Min_Latencay_;//value = mac DIFS + CWmin //for now assign 50microsecond //latency unit is microseconds(4octets)
   u_int32_t Max_PDU_Size_;// in octets largest allowed L2CAP PDU size//2312//
   u_int16_t AMP_ASSOC_Length_;//max size in octets of the requested AMP Assoc Structure(2octets)
+  NsObject* ifq_;
 
 
 
