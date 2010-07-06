@@ -848,7 +848,7 @@ Mac802_11::sendRTS(int dst)
 
 	STORE4BYTE(&index_, (rf->rf_ta));
 
-	/* calculate rts duration field */	
+	/* calculate rts duration field */
 	rf->rf_duration = usec(phymib_.getSIFS()
 			       + txtime(phymib_.getCTSlen(), basicRate_)
 			       + phymib_.getSIFS()
@@ -895,7 +895,7 @@ Mac802_11::sendCTS(int dst, double rts_duration)
 
 	//cf->cf_duration = CTS_DURATION(rts_duration);
 	STORE4BYTE(&dst, (cf->cf_ra));
-	
+
 	/* store cts tx time */
 	ch->txtime() = txtime(ch->size(), basicRate_);
 ;
@@ -906,7 +906,7 @@ Mac802_11::sendCTS(int dst, double rts_duration)
 
 
 	pktCTRL_ = p;
-	
+
 }
 
 void
@@ -1138,16 +1138,16 @@ Mac802_11::RetransmitDATA()
 /* ======================================================================
    Incoming Packet Routines
    ====================================================================== */
-void
+int
 Mac802_11::send(Packet *p, Handler *h)
 {
-	if(pktTx_ != 0){
-		Scheduler& s = Scheduler::instance();
-		double sss = (1+Random::uniform());
-		s.schedule(this, p,sss);
-		printf(".");
-		return;
-	}
+//	if(pktTx_ != 0){
+////		Scheduler& s = Scheduler::instance();
+////		double sss = (Random::uniform()*0.01);
+////		s.schedule(this, p,0);
+//		printf(".");
+//		return -1;
+//	}
 	double rTime;
 	struct hdr_mac802_11* dh = HDR_MAC802_11(p);
 	hdr_cmn *ch = HDR_CMN(p);
@@ -1190,6 +1190,7 @@ Mac802_11::send(Packet *p, Handler *h)
 			mhBackoff_.start(cw_, is_idle());
 		}
 	}
+	return 1;
 }
 
 void
