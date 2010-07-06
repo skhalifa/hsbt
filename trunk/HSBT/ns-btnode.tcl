@@ -185,11 +185,14 @@ Node/BTNode instproc init args {
 #set chan [new $val(chan)];#Create wireless channel
 #$node add-PAL $val(palType) $topo $chan $val(prop)
 		
-Node/BTNode instproc add-PAL {palType topo channel pmodel \
+Node/BTNode instproc add-PAL {palType version topo channel pmodel \
 				txPower_ rxPower_ idlePower_ sleepPower_ \
 				transitionPower_ transitionTime_ } {
 	if {$palType == "PAL/802_11"} {
-
+		if { $version != "802.11b" && $version != "802.11g"} {
+			error "Currently only these 802.11 versions are supported : 802.11b and 802.11g"
+		}
+		
 		set a2mp_ [$self set a2mp_]
 		set l2cap_ [$self set l2cap_]
 		set bnep_ [$self set bnep_]
@@ -212,7 +215,8 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel \
 	$ifq set limit_ 99999999
 	#$pal_ down-target $ifq
 	#$ifq drop-target $drpT
-		
+		if { $version == "802.11b" } {
+########################################################## 802.11b #######################################
 #		The following parameters are set to simulate 802.11b as specified in http://www.joshuarobinson.net/docs/ns-802_11b.html
 #		and Simulate 802.11b Channel within NS2  by Wu Xiuchao, SOC, NUS wuxiucha@comp.nus.edu.sg (http://www.comp.nus.edu.sg/~wuxiucha/research/reactive/publication/Simulate80211ChannelWithNS2.pdf)
 		$ant set Gt_ 1 ;#//Transmit antenna gain
@@ -250,7 +254,30 @@ Node/BTNode instproc add-PAL {palType topo channel pmodel \
 #		Mobile nodes will always send their packets at dataRate_. 
 		$mac set dataRate_ 11Mb
 		$mac set basicRate_ 1Mb ;#Rate for Control Frames
+########################################################## End 802.11b #######################################
+		} elseif { $version == "802.11g"} {
+########################################################## 802.11g #######################################		
+		$mac set SlotTime_              0.000020  ;# 20us
+		$mac set SIFS_                  0.000009  ;# 9us
+		$mac set RTSThreshold_          3000      ;# bytes
+		$mac set ShortRetryLimit_      7        ;# retransmissions
+		$mac set LongRetryLimit_        4        ;# retransmissions                                               
+		$mac set dataRate_ 54Mb                  ;# 802.11 data transmission rate
+		$mac set basicRate_ 6Mb                  ;# 802.11 basic transmission rate
+		$mac set amc_ 1                          ;# 802.11 Multirate_speed
 		
+		# --- Configuration PHY 802.11g ---
+		$ant set Gt_    1              ;# transmitter antenna gain
+		$ant set Gr_    1              ;# receiver antenna gain
+		$netif set freq_      2.472e9        ;# channel frequency (Hz)
+		$netif set L_          1.0
+		$mac set CWMin_                15
+		$mac set CWMax_                1023
+		$mac set PreambleLength_        96        ;# 96 bit
+		$mac set PLCPHeaderLength_      24        ;# 24 bits
+		$mac set PLCPDataRate_          6.0e6    ;# 1Mbps
+########################################################## End 802.11g #######################################	
+		}
 		set namfp [$ns get-nam-traceall]
 		
 		######### I have no idea what are the following lines needed for ##########
