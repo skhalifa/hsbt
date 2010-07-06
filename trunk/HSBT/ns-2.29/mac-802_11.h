@@ -243,7 +243,7 @@ public:
 	inline int	hdr_type(char* hdr, u_int16_t type = 0);
 	inline int	is_idle(void);
 	inline int bss_id() { return bss_id_; }
-
+	int		send(Packet *p, Handler *h);
 	
 	// Added by Sushmita to support event tracing
         void trace_event(char *, Packet *);
@@ -272,7 +272,7 @@ private:
 	/*
 	 * Packet Transmission Functions.
 	 */
-	void	send(Packet *p, Handler *h);
+
 	void 	sendRTS(int dst);
 	void	sendCTS(int dst, double duration);
 	void	sendACK(int dst);
