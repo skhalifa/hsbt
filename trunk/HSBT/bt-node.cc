@@ -341,6 +341,63 @@ int BTNode::command(int argc, const char * const *argv) {
 				tcl.resultf("%f",0.0);
 			return TCL_OK;
 		}
+		else if (!strcasecmp(argv[1], "ampIdleTime")) {
+			if(this->energy_model() != NULL){
+				tcl.resultf("%f",energy_model()->ti());
+			}else
+				tcl.resultf("%f",0.0);
+			return TCL_OK;
+		}
+		else if (!strcasecmp(argv[1], "ampRXTime")) {
+			if(this->energy_model() != NULL){
+				tcl.resultf("%f",energy_model()->tr());
+			}else
+				tcl.resultf("%f",0.0);
+			return TCL_OK;
+		}
+		else if (!strcasecmp(argv[1], "ampTXTime")) {
+			if(this->energy_model() != NULL){
+				tcl.resultf("%f",energy_model()->tt());
+			}else
+				tcl.resultf("%f",0.0);
+			return TCL_OK;
+		}
+		else if (!strcasecmp(argv[1], "ampSleepTime")) {
+			if(this->energy_model() != NULL){
+				tcl.resultf("%f",energy_model()->ts());
+			}else
+				tcl.resultf("%f",0.0);
+			return TCL_OK;
+		}
+		else if (!strcasecmp(argv[1], "ampavgIdleTime")) {
+			if(this->energy_model() != NULL){
+				tcl.resultf("%f",energy_model()->avgti());
+			}else
+				tcl.resultf("%f",0.0);
+			return TCL_OK;
+		}
+		else if (!strcasecmp(argv[1], "ampavgRXTime")) {
+			if(this->energy_model() != NULL){
+				tcl.resultf("%f",energy_model()->avgtr());
+			}else
+				tcl.resultf("%f",0.0);
+			return TCL_OK;
+		}
+		else if (!strcasecmp(argv[1], "ampavgTXTime")) {
+			if(this->energy_model() != NULL){
+				tcl.resultf("%f",energy_model()->avgtt());
+			}else
+				tcl.resultf("%f",0.0);
+			return TCL_OK;
+		}
+		else if (!strcasecmp(argv[1], "ampavgSleepTime")) {
+			if(this->energy_model() != NULL){
+				tcl.resultf("%f",energy_model()->avgts());
+			}else
+				tcl.resultf("%f",0.0);
+			return TCL_OK;
+		}
+
 	} else if (argc == 3) {
 
 		if (!strcmp(argv[1], "make-hs-connection")) {

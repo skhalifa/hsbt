@@ -836,10 +836,10 @@ int L2CAP::connection_complete_event(ConnectionHandle * connh,
 void L2CAP::_channel_setup_complete(L2CAPChannel * ch)
 {
     ch->ready_ = 1;
-    if(ch->highSpeed_)
-    {
-    	ch->_connhand->ampConnection_->cid_->disconnect('0');
-    }
+//    if(ch->highSpeed_)
+//    {
+//    	ch->_connhand->ampConnection_->cid_->disconnect('0');
+//    }
     if (bnep_ && ch->psm() == PSM_BNEP) {
 	bnep_->channel_setup_complete(ch);
 	return;

@@ -122,6 +122,15 @@ void PAL802_11::sendDown(AMPConnection* conn,Packet *p){
 
 
 	if(conn->physicalLinkState_ == Connected){
+
+		///////////////////////////
+//		if(!netif_->Is_node_on())
+//		{
+//			netif_->node_on();
+//		}
+
+
+		/////////////////////////
 	 //printf("Sending MAC Packet to %i\n",((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_);
 	 //printf("I'm %i Sending MAC Packet to %i with BT daddr_%i\n",mac_->addr(),conn->dAMPaddr_,conn->dBTaddr_);
 	hdr_cmn *ch = HDR_CMN(p);
@@ -334,7 +343,8 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 		//send auth packet
 		Scheduler& s = Scheduler::instance();
 		// let mac decide when to take a new packet from the queue.
-		s.schedule(((Mac802_11*)mac_), p, 0);
+		//s.schedule(((Mac802_11*)mac_), p, 0);
+		s.schedule(ifq_, p, 0);
 
 
  }
@@ -447,7 +457,8 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 				//send auth packet
 				Scheduler& s = Scheduler::instance();
 				// let mac decide when to take a new packet from the queue.
-				s.schedule(((Mac802_11*)mac_), rp, 0);
+				//s.schedule(((Mac802_11*)mac_), rp, 0);
+				s.schedule(ifq_, rp, 0);
 		}
 		break;
 		case Link_Supervision_Reply:{
@@ -455,6 +466,14 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 			conn->physicalLinkState_=Connected;
 			//notify A2MP to create the logical link
 			HCI_Create_Logical_link(conn);
+			////////////////////////////
+//			 if(netif_->Is_node_on())
+//			 {
+//				//netif_->node_off();
+//			 }
+
+			////////////////////////////
+
 		}
 			break;
 		default:
