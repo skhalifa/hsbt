@@ -51,4 +51,6 @@ setlink $dir/trace cmu-trace.h ../$DST
 setlink $dir/trace cmu-trace.cc ../$DST
 setlink $dir/dsdv dsdv.h ../$DST
 setlink $dir/dsdv rtable.h ../$DST
+setlink $dir/mobile energy-model.h ../$DST
+setlink $dir/mobile energy-model.cc ../$DST
 
