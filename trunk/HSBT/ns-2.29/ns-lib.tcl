@@ -193,6 +193,7 @@ source ../webcache/empweb.tcl
 source ns-namsupp.tcl
 source ../mobility/dsdv.tcl
 source ../mobility/dsr.tcl
+source ../mobility/noah.tcl
 source ../mobility/com.tcl
 
 source ../../bluetooth/ns-btnode.tcl
@@ -312,6 +313,7 @@ Simulator instproc dumper obj {
 #                  -llType
 #                  -macType
 #                  -propType
+#                  -modulationType
 #                  -ifqType
 #                  -ifqLen
 #                  -phyType
@@ -345,6 +347,11 @@ Simulator instproc llType  {val} { $self set llType_  $val }
 Simulator instproc macType  {val} { $self set macType_  $val }
 Simulator instproc propType  {val} { $self set propType_  $val }
 Simulator instproc propInstance  {val} { $self set propInstance_  $val }
+Simulator instproc modulationType  {val} {
+	puts stderr "hello1"
+	$self set modulationType_  $val
+}
+Simulator instproc modulationInstance  {val} { $self set modulationInstance_  $val }
 Simulator instproc ifqType  {val} { $self set ifqType_  $val }
 Simulator instproc ifqLen  {val} { $self set ifqlen_  $val }
 Simulator instproc phyType  {val} { $self set phyType_  $val }
@@ -442,9 +449,9 @@ Simulator instproc node-config args {
         # return value from init-vars{}.
         set args [eval $self init-vars $args]
 
-        $self instvar addressType_  routingAgent_ propType_  macTrace_ \
+        $self instvar addressType_  routingAgent_ propType_  modulationType_ macTrace_ \
 	    routerTrace_ agentTrace_ movementTrace_ channelType_ channel_ \
-	    chan topoInstance_ propInstance_ mobileIP_ \
+	    chan topoInstance_ propInstance_ modulationInstance_ mobileIP_ \
 	    rxPower_ txPower_ idlePower_ sleepPower_ transitionPower_ \
 	    transitionTime_ satNodeType_ eotTrace_ macType_
 
@@ -485,6 +492,19 @@ Simulator instproc node-config args {
 		}
 	}
 	
+	# Only create 1 instance of modulation
+	if {[info exists modulationInstance_]} {
+		if {[info exists modulationType_] && [Simulator set modulationInstCreated_] == 0} {
+			warn "Both modulationType and modulationInstance are set. modulationType is ignored."
+		}
+	} else {
+		if {[info exists modulationType_]} {
+			puts stderr "Hello2 $modulationType_"
+			set modulationInstance_ [new $modulationType_]
+			Simulator set modulationInstCreated_ 1
+		}
+	}	
+
 	# Add multi-interface support:
  	# User can only specify either channelType_ (single_interface as 
 	# before) or channel_ (multi_interface)
@@ -626,7 +646,7 @@ Simulator instproc imep-support {} {
 # XXX This should be moved into the node initialization procedure instead 
 # of standing here in ns-lib.tcl.
 Simulator instproc create-wireless-node args {
-        $self instvar routingAgent_ wiredRouting_ propInstance_ llType_ \
+        $self instvar routingAgent_ wiredRouting_ propInstance_ modulationInstance_ llType_ \
 	    macType_ ifqType_ ifqlen_ phyType_ chan antType_ \
 	    energyModel_ initialEnergy_ txPower_ rxPower_ \
 	    idlePower_ sleepPower_ transitionPower_ transitionTime_ \
@@ -681,6 +701,9 @@ Simulator instproc create-wireless-node args {
 	    ManualRtg {
 		    set ragent [$self create-manual-rtg-agent $node]
 	    }
+	    NOAH {
+		    set ragent [$self create-noah-agent $node]
+	    }
 	    default {
 		    eval $node addr $args
 		    puts "Wrong node routing agent!"
@@ -700,10 +723,12 @@ Simulator instproc create-wireless-node args {
 		set FECProc_ ""
 	}
 
-	
+	if ![info exists modulationInstance_] {
+		set modulationInstance_ ""
+	}
 
 	# Add main node interface
-	$node add-interface $chan $propInstance_ $llType_ $macType_ \
+	$node add-interface $chan $propInstance_ $modulationInstance_ $llType_ $macType_ \
 	    $ifqType_ $ifqlen_ $phyType_ $antType_ $topoInstance_ \
 			$inerrProc_ $outerrProc_ $FECProc_
 	
@@ -867,6 +892,26 @@ Simulator instproc create-aodv-agent { node } {
         $node set ragent_ $ragent
         return $ragent
 }
+
+Simulator instproc create-noah-agent { node } {
+	# Create a noah routing agent for this node
+	set ragent [new Agent/NOAH]
+
+	## setup address (supports hier-addr) for noah agent
+	## and mobilenode
+	set addr [$node node-addr]
+
+	$ragent addr $addr
+	$ragent node $node
+
+	if [Simulator set mobile_ip_] {
+		$ragent port-dmux [$node demux]
+	}
+	$node addr $addr
+	$node set ragent_ $ragent
+	return $ragent
+}
+
 
 Simulator instproc use-newtrace {} {
 	Simulator set WirelessNewTrace_ 1
