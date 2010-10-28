@@ -32,6 +32,7 @@ setlink $dir Makefile.in $DST
 setlink $dir/tcl/lib ns-lib.tcl ../../$DST
 setlink $dir/tcl/lib ns-mobilenode.tcl ../../$DST
 setlink $dir/tcl/lib ns-packet.tcl ../../$DST
+setlink $dir/tcl/lib ns-default.tcl ../../$DST
 setlink $dir/tcl/mobility noah.tcl ../../$DST
 setlink $dir/tcl/lan ns-mac.tcl ../../$DST
 setlink $dir/common packet.h ../$DST

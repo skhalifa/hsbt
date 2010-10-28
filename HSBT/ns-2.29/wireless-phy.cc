@@ -79,7 +79,7 @@ PacketQueue WirelessPhy::interfQ_[14];
 int WirelessPhy::chan_ = 3;
 int WirelessPhy::txqueued_ = 0;
 
-WirelessPhy::WirelessPhy() : Phy(), sleep_timer_(this), status_(IDLE)
+WirelessPhy::WirelessPhy() : Phy(), sleep_timer_(this), status_(CHAN_IDLE)
 {
 	/*
 	 *  It sounds like 10db should be the capture threshold.
@@ -271,7 +271,7 @@ WirelessPhy::sendDown(Packet *p)
 			   fprintf(stderr,"What the heck ! negative gap time.\n");
 		   }
 
-		   if ((gap_adjust_time > 0.0) && (status_ == RECV)) {
+		   if ((gap_adjust_time > 0.0) && (status_ == CHAN_RECV)) {
 			   em()->DecrTxEnergy(gap_adjust_time,
 					      Pt_consume_-Pr_consume_);
 		   }
@@ -281,7 +281,7 @@ WirelessPhy::sendDown(Packet *p)
 //			   status_ = SEND;
 //		   }
 //
-		   status_ = IDLE;
+		   status_ = CHAN_IDLE;
 
 		   last_send_time_ = NOW+txtime;
 		   channel_idle_time_ = end_time;
@@ -425,7 +425,7 @@ DONE:
 		channel_idle_time_ = end_time;
 		update_energy_time_ = end_time;
 
-		status_ = IDLE;
+		status_ = CHAN_IDLE;
 
 		/*
 		  hdr_diff *dfh = HDR_DIFF(p);
@@ -454,7 +454,7 @@ WirelessPhy::node_on()
 {
 
         node_on_= TRUE;
-	status_ = IDLE;
+	status_ = CHAN_IDLE;
 
        if (em() == NULL)
  	    return;	
@@ -468,7 +468,7 @@ WirelessPhy::node_off()
 {
 
         node_on_= FALSE;
-	status_ = SLEEP;
+	status_ = CHAN_SLEEP;
 
 	if (em() == NULL)
             return;
@@ -483,19 +483,19 @@ void
 WirelessPhy::node_wakeup()
 {
 
-	if (status_== IDLE)
+	if (status_== CHAN_IDLE)
 		return;
 
 	if (em() == NULL)
             return;
 
-        if ( NOW > update_energy_time_ && (status_== SLEEP) ) {
+        if ( NOW > update_energy_time_ && (status_== CHAN_SLEEP) ) {
 		//the power consumption when radio goes from SLEEP mode to IDLE mode
 		em()->DecrTransitionEnergy(T_transition_,P_transition_);
 		
 		em()->DecrSleepEnergy(NOW-update_energy_time_,
 				      P_sleep_);
-		status_ = IDLE;
+		status_ = CHAN_IDLE;
 	        update_energy_time_ = NOW;
 		
 		// log node energy
@@ -513,19 +513,19 @@ WirelessPhy::node_sleep()
 //
 //        node_on_= FALSE;
 //
-	if (status_== SLEEP)
+	if (status_== CHAN_SLEEP)
 		return;
 
 	if (em() == NULL)
             return;
 
-        if ( NOW > update_energy_time_ && (status_== IDLE) ) {
+        if ( NOW > update_energy_time_ && (status_== CHAN_IDLE) ) {
 	//the power consumption when radio goes from IDLE mode to SLEEP mode
 	    em()->DecrTransitionEnergy(T_transition_,P_transition_);
 
             em()->DecrIdleEnergy(NOW-update_energy_time_,
                                 P_idle_);
-		status_ = SLEEP;
+		status_ = CHAN_SLEEP;
 	        update_energy_time_ = NOW;
 
 	// log node energy
@@ -554,7 +554,7 @@ void WirelessPhy::UpdateIdleEnergy()
 	if (em() == NULL) {
 		return;
 	}
-	if (NOW > update_energy_time_ && (Is_node_on()==TRUE && status_ == IDLE ) ) {
+	if (NOW > update_energy_time_ && (Is_node_on()==TRUE && status_ == CHAN_IDLE ) ) {
 		  em()-> DecrIdleEnergy(NOW-update_energy_time_,
 					P_idle_);
 		  update_energy_time_ = NOW;

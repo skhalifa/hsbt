@@ -413,7 +413,7 @@ InterferencePhy::sendUp(Packet *p)
 		
 		em()->DecrRcvEnergy(actual_rcvtime,Pr_consume_);
 		if (end_time > channel_idle_time_) {
-			status_ = RECV;
+			status_ = CHAN_RECV;
 		}
 
 		channel_idle_time_ = end_time;
