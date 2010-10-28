@@ -98,7 +98,7 @@ public:
 	void node_sleep();
 	void node_wakeup();
 	inline bool& Is_node_on() { return node_on_; }
-	inline bool Is_sleeping() { if (status_==SLEEP) return(1); else return(0); }
+	inline bool Is_sleeping() { if (status_==CHAN_SLEEP) return(1); else return(0); }
 
 protected:
 	// Convenience method
@@ -129,12 +129,8 @@ protected:
   
 	Antenna *ant_;
 	Propagation *propagation_;	// Propagation Model
-	Modulation *modulation_;	// Modulation Schem
-
-	// Why phy has a node_ and this guy has it all over again??
-//  	MobileNode* node_;         	// Mobile Node to which interface is attached .
-
- 	enum ChannelStatus { SLEEP, IDLE, RECV, SEND };	
+	Modulation *modulation_;	// Modulation Schema
+ 	enum ChannelStatus { CHAN_SLEEP, CHAN_IDLE, CHAN_RECV, CHAN_SEND };
 	bool node_on_; // on-off status of this node
 	Sleep_Timer sleep_timer_;
 	int status_;
@@ -143,6 +139,10 @@ protected:
 	static PacketQueue interfQ_[14];
 	static int chan_;
 	static int txqueued_;
+
+	// Why phy has a node_ and this guy has it all over again??
+//  	MobileNode* node_;         	// Mobile Node to which interface is attached .
+
 
 private:
 /*	inline int initialized() {
