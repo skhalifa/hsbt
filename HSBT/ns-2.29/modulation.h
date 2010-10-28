@@ -36,6 +36,8 @@
 #ifndef __modulation_h__
 #define __modulation_h__
 
+#include "packet.h"
+
 /* ======================================================================
    Modulation Schemes
 
@@ -46,12 +48,12 @@
 
    ====================================================================== */
 
-class Modulation {
+class Modulation  : public TclObject {
 
 public:
 	virtual ~Modulation () {}
 	virtual int BitError(double) = 0;	// success reception?
-
+	virtual int BitError(double, double, double, Packet*) = 0;
 protected:
 	int Rs;					// symbol rate per second
 
