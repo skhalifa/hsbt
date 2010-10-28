@@ -56,6 +56,7 @@
 #define HDR_MAC802_11(p) ((hdr_mac802_11 *)hdr_mac::access(p))
 #define HDR_MAC_TDMA(p) ((hdr_mac_tdma *)hdr_mac::access(p))
 #define HDR_SMAC(p)     ((hdr_smac *)hdr_mac::access(p))
+#define HDR_MAC_IFControl(p) (hdr_mac_ifcontrol::access(p)) /* DCC-MAC */
 #define HDR_LL(p)       (hdr_ll::access(p))
 #define HDR_HDLC(p)     ((hdr_hdlc *)hdr_ll::access(p))
 #define HDR_IP(p)       (hdr_ip::access(p))
@@ -120,6 +121,7 @@ enum packet_t {
 	/* CMU/Monarch's extnsions */
 	PT_ARP,
 	PT_MAC,
+	PT_MAC_IFControl,
 	PT_TORA,
 	PT_DSR,
 	PT_AODV,
@@ -225,6 +227,7 @@ public:
 		name_[PT_MFTP]= "mftp";
 		name_[PT_ARP]= "ARP";
 		name_[PT_MAC]= "MAC";
+		name_[PT_MAC_IFControl]= "MACIFControl";
 		name_[PT_TORA]= "TORA";
 		name_[PT_DSR]= "DSR";
 		name_[PT_AODV]= "AODV";

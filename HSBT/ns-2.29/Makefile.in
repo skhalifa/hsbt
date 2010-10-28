@@ -224,17 +224,19 @@ OBJ_CC = \
 	common/Decapsulator.o common/Encapsulator.o \
 	common/encap.o \
 	mac/channel.o mac/mac.o mac/ll.o mac/mac-802_11.o \
+	mac/mac-ifcontrol.o \
 	mac/mac-802_3.o mac/mac-tdma.o mac/smac.o \
 	mobile/mip.o mobile/mip-reg.o mobile/gridkeeper.o \
-	mobile/propagation.o mobile/tworayground.o \
+	mobile/propagation.o mobile/tworayground.o mobile/propagation-tarokh.o \
 	mobile/antenna.o mobile/omni-antenna.o \
 	mobile/shadowing.o mobile/shadowing-vis.o mobile/dumb-agent.o \
 	common/bi-connector.o common/node.o \
 	common/mobilenode.o \
 	mac/arp.o mobile/god.o mobile/dem.o \
-	mobile/topography.o mobile/modulation.o \
+	mobile/topography.o mobile/modulation.o mobile/modulation-codedppm.o \
 	queue/priqueue.o queue/dsr-priqueue.o \
 	mac/phy.o mac/wired-phy.o mac/wireless-phy.o \
+	mac/interference-phy.o \
 	mac/mac-timers.o trace/cmu-trace.o mac/varp.o \
 	mac/mac-simple.o \
 	satellite/sat-hdlc.o \
@@ -251,6 +253,7 @@ OBJ_CC = \
 	dsr/simplecache.o dsr/sr_forwarder.o \
 	aodv/aodv_logs.o aodv/aodv.o \
 	aodv/aodv_rtable.o aodv/aodv_rqueue.o \
+	noah/noah.o \
 	common/ns-process.o \
 	satellite/satgeometry.o satellite/sathandoff.o \
 	satellite/satlink.o satellite/satnode.o \
@@ -447,6 +450,7 @@ NS_TCL_LIB = \
 	tcl/mcast/McastMonitor.tcl \
 	tcl/mobility/dsdv.tcl \
 	tcl/mobility/dsr.tcl \
+	tcl/mobility/noah.tcl \
         tcl/ctr-mcast/CtrMcast.tcl \
         tcl/ctr-mcast/CtrMcastComp.tcl \
         tcl/ctr-mcast/CtrRPComp.tcl \

@@ -163,6 +163,7 @@ foreach prot {
 	LL 	# network wireless stack
         LRWPAN  # zheng, wpan/p802_15_4mac.cc
 	Mac 	# network wireless stack
+	IFControl 	# EPFL, UWB DCC-MAC
 # Mobility, Ad-Hoc Networks, Sensor Nets:
 	AODV 	# routing protocol for ad-hoc networks
 	Diffusion 	# diffusion/diffusion.cc

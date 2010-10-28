@@ -101,6 +101,11 @@ public:
 	inline bool Is_sleeping() { if (status_==SLEEP) return(1); else return(0); }
 
 protected:
+	// Convenience method
+	EnergyModel* em() { return node()->energy_model(); }
+	inline int initialized() {
+		return (node_ && uptarget_ && downtarget_ && propagation_);
+	}
 	double Pt_;		// transmitted signal power (W)
 	double Pt_consume_;	// power consumption for transmission (W)
 	double Pr_consume_;	// power consumption for reception (W)
@@ -140,14 +145,15 @@ protected:
 	static int txqueued_;
 
 private:
-	inline int initialized() {
+/*	inline int initialized() {
 		return (node_ && uptarget_ && downtarget_ && propagation_);
 	}
+	*/
 	void UpdateIdleEnergy();
 	void UpdateSleepEnergy();
 
 	// Convenience method
-	EnergyModel* em() { return node()->energy_model(); }
+	//EnergyModel* em() { return node()->energy_model(); }
 
 	// void purgeInterferenceQ(int ch);
 	void purgeInterferenceQ();
