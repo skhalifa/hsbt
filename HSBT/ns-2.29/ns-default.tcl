@@ -680,12 +680,12 @@ Snoop set debug_ false
 #
 Mac/IFControl set CWMin_         4 ;#4 , 1
 Mac/IFControl set CWMax_         31 ;#31, 10
-Mac/IFControl set SlotTime_      0.000000020;#0.000000016        ;# 20ns
-Mac/IFControl set SIFS_          0.000000010;#0.000000008        ;# 10ns Short interframe space (gaps between frames)
+Mac/IFControl set SlotTime_      0.000000016;#0.000000016        ;# 16us
+Mac/IFControl set SIFS_          0.000000008;#0.000000008        ;# 8us Short interframe space (gaps between frames)
 Mac/IFControl set PreambleLength_        144             ;# 144 bit
 Mac/IFControl set PLCPHeaderLength_      48              ;# 48 bits
 Mac/IFControl set PLCPDataRate_  2.0e6           ;# 1Mbps
-Mac/IFControl set RTSThreshold_  5000            ;# bytes
+Mac/IFControl set RTSThreshold_  5000;#0   ;#5000            ;# bytes
 Mac/IFControl set ShortRetryLimit_       7               ;# retransmittions
 Mac/IFControl set LongRetryLimit_        4               ;# retransmissions
 
@@ -730,18 +730,17 @@ Phy/WirelessPhy set Pt_ 0.28183815
 Phy/WirelessPhy set freq_ 914e+6
 Phy/WirelessPhy set L_ 1.0  
 
-# this should really be called bandwidth!
-Phy/WirelessPhy/InterferencePhy set frequency_range_ 7.5e+9
-# -80dBm (from ST)
-Phy/WirelessPhy/InterferencePhy set noise_ 1e-11
+Phy/WirelessPhy/InterferencePhy set Pt_ 0.280e-3 
+Phy/WirelessPhy/InterferencePhy set frequency_range_ 1.75e+9 ;#7.5e+9  - # this should really be called bandwidth! - use only the lower band
+Phy/WirelessPhy/InterferencePhy set freq_ 4e+9 ;# center frequency
+Phy/WirelessPhy/InterferencePhy set noise_ 1e-11;# -80dBm (from ST)
 Phy/WirelessPhy/InterferencePhy set use_timehopping_ 1
 Phy/WirelessPhy/InterferencePhy set preamble_local_ 1
-Phy/WirelessPhy/InterferencePhy set preamble_time_ 1e-8
-Phy/WirelessPhy/InterferencePhy set bandwidth_ 2e6
-# taken from Community Wireless Project FAQ (between -80 and -96 dbm)
-Phy/WirelessPhy/InterferencePhy set CSThresh_ 2.5e-13;
-
-#Phy/WirelessPhy/InterferencePhy set erasure_coefficient_ 5
+Phy/WirelessPhy/InterferencePhy set preamble_time_ 10e-6   ;#[expr $preamble * 1e-9] ;# short premable 10us ;# old value = 1e-8
+Phy/WirelessPhy/InterferencePhy set bitrate_ 1320Mb ;#18Mb
+Phy/WirelessPhy/InterferencePhy set bandwidth_ 1.75e+9 ;#2e6
+Phy/WirelessPhy/InterferencePhy set CSThresh_ 2.5e-13;#taken from Community Wireless Project FAQ (between -80 and -96 dbm)
+Phy/WirelessPhy/InterferencePhy set erasure_coefficient_ 5
 
 
 Phy/WiredPhy set bandwidth_ 10e6

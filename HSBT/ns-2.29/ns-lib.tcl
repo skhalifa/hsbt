@@ -448,7 +448,6 @@ Simulator instproc node-config args {
         # Since we do not handle undefined {-cmd val} pairs, we ignore 
         # return value from init-vars{}.
         set args [eval $self init-vars $args]
-
         $self instvar addressType_  routingAgent_ propType_  modulationType_ macTrace_ \
 	    routerTrace_ agentTrace_ movementTrace_ channelType_ channel_ \
 	    chan topoInstance_ propInstance_ modulationInstance_ mobileIP_ \

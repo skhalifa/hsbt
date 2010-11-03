@@ -76,7 +76,7 @@ if [TclObject is-class Mac/IFControl] {
 	Mac/IFControl set difs_ 16us
 	Mac/IFControl set rtxAckLimit_ 1
 	Mac/IFControl set rtxRtsLimit_ 3
-        Mac/IFControl set RTSThreshold 5000 ; # no RTS/CTS enabled in DCC-MAC
+        Mac/IFControl set RTSThreshold 5000; #0;#5000 ; # no RTS/CTS enabled in DCC-MAC
         Mac/IFControl set fixed_code -1 ; # dynamic coding
 }
 

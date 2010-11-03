@@ -606,9 +606,11 @@ Mac_IFControl::txtime(int psz, int channel_code)
 	assert (dsz > 0);
 
 	double basicrate = netif_->ppm_rate(MODULATION_NUM_CODES - 1);
-//printf("\n\n\n\n\n basic rate = %f\n\n\n\n\n",basicrate);
+//printf("\n\n\n\n\n MODULATION_NUM_CODES = %i\n\n\n\n\n",MODULATION_NUM_CODES);
+//printf("\n\n\n\n\n basicrate = %f\n\n\n\n\n",basicrate);
 	double datarate = netif_->ppm_rate(channel_code);
-//printf("\n\n\n\n\n data rate = %f\n\n\n\n\n",datarate);
+//printf("\n\n\n\n\n channel_code = %i\n\n\n\n\n",channel_code);
+//printf("\n\n\n\n\n datarate = %f\n\n\n\n\n",datarate);
 
 //printf("\n\n\n\n\n bit rate = %f\n\n\n\n\n",netif_->bitrate());
 	assert(basicrate > 0 && datarate > 0);

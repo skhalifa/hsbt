@@ -341,12 +341,14 @@ private:
 		return us;
 	}
 
-protected:
+public:
 	PHY_IF_MIB		phymib_;
 	MAC_IF_MIB		macmib_;
 
 	// pointer to PHY layer to access is_idle(), best_code(), and bitrate_()
 	InterferencePhy *netif_;            // network interface
+
+protected:
 
 	/*
 	 * Mac Timers
