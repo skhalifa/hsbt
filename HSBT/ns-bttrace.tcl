@@ -40,10 +40,11 @@
 
 proc bt-trace { ttype atype node } {
         # global ns_ tracefd
-                                                                                
+	#bt-trace Send "RTR" $self
+                                                                             
 	set ns [Simulator instance]
 	set tracefd [$ns get-ns-traceall]
-
+	
         if { $tracefd == "" } {
                 return ""
         }
@@ -162,11 +163,13 @@ Node/BTNode instproc add-target-rtagent { agent port } {
 		#
 		# Send Target
 		#
+
 		if {$newapi != ""} {
 			set sndT [$self mobility-trace Send "RTR"]
 		} else {
 			set sndT [bt-trace Send "RTR" $self]
 		}
+		
 		if { $namfp != "" } {
 			$sndT namattach $namfp
 		}
