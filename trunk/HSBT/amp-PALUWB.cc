@@ -33,24 +33,24 @@
 
 #include <string.h>
 
-//include "amp-PAL802_11.h"
+//#include "amp-PALUWB.h"
 #include "amp-PAL.h"
 
+
 /////////////////////////////////PAL802.11//////////////////////////////////////
-
-int hdr_pal::offset_;
-static class PAL802_11class:public TclClass {
+//int hdr_pal::offset_;
+static class PALUWBclass:public TclClass {
   public:
-	PAL802_11class():TclClass("PAL/802_11") {}
+	PALUWBclass():TclClass("PAL/UWB") {}
     TclObject *create(int, const char *const *) {
-	return (new PAL802_11());
+	return (new PALUWB());
     }
-} class_PAL802_11;
+} class_PALUWB;
 
-PAL802_11::PAL802_11(){
-	//printf("*** PAL 802.11 constructor.\n");
+PALUWB::PALUWB(){
+	//printf("*** PAL UWB constructor.\n");
 }
-int PAL802_11::command(int argc, const char*const* argv)
+int PALUWB::command(int argc, const char*const* argv)
 {
 	Tcl& tcl = Tcl::instance();
 	if(argc == 2)
@@ -88,14 +88,14 @@ int PAL802_11::command(int argc, const char*const* argv)
 		}
 	}
 }
-void PAL802_11::on(){
+void PALUWB::on(){
 
 }
-void PAL802_11::_init(){
+void PALUWB::_init(){
 
 
-	Max_Guaranteed_Bandwidth_ = ((Mac802_11*)mac_)->dataRate_/1000;//Fixme: the guaranteed bandwidth should equals total bandwidth - used bandwidth
-	Min_Latencay_ = ((Mac802_11*)mac_)->phymib_.getDIFS()+((Mac802_11*)mac_)->phymib_.getCWMin();
+	Max_Guaranteed_Bandwidth_ = 200000;//((Mac_IFControl*)mac_)->dataRate_/1000;//Fixme: the guaranteed bandwidth should equals total bandwidth - used bandwidth
+	Min_Latencay_ = ((Mac_IFControl*)mac_)->phymib_.getDIFS()+((Mac_IFControl*)mac_)->phymib_.getCWMin();
 	Max_PDU_Size_ = Max80211PALPDUSize;
 	AMP_ASSOC_Length_ = Max80211AMPASSOCLen;
 	controllerID_ = Controller_ID_;
@@ -105,7 +105,7 @@ void PAL802_11::_init(){
 	//printf("PAL INIT BW = %i\n",Max_Guaranteed_Bandwidth_);
 }
 
-void PAL802_11::sendUp(Packet *p, Handler *h){
+void PALUWB::sendUp(Packet *p, Handler *h){
 	hdr_bt *bh = HDR_BT(p);
 	AMPConnection* conn = a2mp_->lookupConnection(bh->sender);
 
@@ -117,7 +117,7 @@ void PAL802_11::sendUp(Packet *p, Handler *h){
 	}
 }
 
-void PAL802_11::sendDown(AMPConnection* conn,Packet *p){
+void PALUWB::sendDown(AMPConnection* conn,Packet *p){
 
 
 	if(conn->physicalLinkState_ == Connected){
@@ -130,7 +130,7 @@ void PAL802_11::sendDown(AMPConnection* conn,Packet *p){
 
 
 		/////////////////////////
-	 //printf("Sending MAC Packet to %i\n",((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_);
+	 //printf("Sending MAC Packet to %i\n",((ASSOCUWB**)conn->remoteAMPAssoc_)[0]->value_);
 	 //printf("I'm %i Sending MAC Packet to %i with BT daddr_%i\n",mac_->addr(),conn->dAMPaddr_,conn->dBTaddr_);
 	hdr_cmn *ch = HDR_CMN(p);
 	 //printf("PAL uid %i\n",ch->uid());
@@ -143,7 +143,7 @@ void PAL802_11::sendDown(AMPConnection* conn,Packet *p){
 	 bh->sender = mac_->addr();
 	 //bh->connHand_ = conn->logicalChannel_->connhand();
 	 //bh->connHand_= conn->cid_->connhand();
-	 //u_int8_t* dap = ((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_;
+	 //u_int8_t* dap = ((ASSOCUWB**)conn->remoteAMPAssoc_)[0]->value_;
 	//char *mh = (char*)p->access(hdr_mac::offset_);
 	// printf("PAL send to mac with bnep src = %i and dst = %i with type = %i\n",mh->macSA(),mh->macDA(),ch->ptype());
 	if (mh->macDA() == (int) MAC_BROADCAST)
@@ -168,7 +168,7 @@ void PAL802_11::sendDown(AMPConnection* conn,Packet *p){
 	sh->Length_ = sizeof(p);
 
 	//Handler* h =0;
-	//((Mac802_11*)mac_)->recv(p,h);
+	//((Mac_IFControl*)mac_)->recv(p,h);
 	//send auth packet
 
 	// let mac decide when to take a new packet from the queue.
@@ -177,7 +177,7 @@ void PAL802_11::sendDown(AMPConnection* conn,Packet *p){
 //	bool cont = true;
 //	while(((Queue*)ifq_)->length() > 0 && cont){
 //		Packet *pkt = ((Queue*)ifq_)->deque();
-//		if((((Mac802_11*)mac_)->send(pkt,h)) < 0){
+//		if((((Mac_IFControl*)mac_)->send(pkt,h)) < 0){
 //			cont = false;
 //			((Queue*)ifq_)->enque(pkt);
 //		}
@@ -185,39 +185,39 @@ void PAL802_11::sendDown(AMPConnection* conn,Packet *p){
 
 //	printf("Queue size 1 = %i\n",((Queue*)ifq_)->length());
 	Scheduler& s = Scheduler::instance();
-//	s.schedule(((Mac802_11*)mac_), p,0);
+//	s.schedule(((Mac_IFControl*)mac_), p,0);
 	s.schedule(ifq_, p,0);
 //	printf("Queue size 2 = %i\n",((Queue*)ifq_)->length());
 	}
 
 }
-Version_Info* PAL802_11::HCI_Read_Local_Version_Info(){
+Version_Info* PALUWB::HCI_Read_Local_Version_Info(){
 	return new Version_Info(PAL_Version_,PAL_Company_Identifier_,PAL_Sub_version_);
 }
 
-AMP_Info* PAL802_11::HCI_Read_Local_AMP_Info()
+AMP_Info* PALUWB::HCI_Read_Local_AMP_Info()
 {
 	//printf("Later BW = %d\n",Max_Guaranteed_Bandwidth_);
 	return new AMP_Info(Total_Bandwidth_,Max_Guaranteed_Bandwidth_,Min_Latencay_,Max_PDU_Size_,Controller_Type_,palCapabilities_,AMP_ASSOC_Length_,Max_Flush_Timeout_,Best_Effort_Flush_Timeout_);
 }
-u_int8_t* PAL802_11::HCI_Read_Local_AMP_Assoc()
+u_int8_t* PALUWB::HCI_Read_Local_AMP_Assoc()
 {
-	ASSOC802_11** assoc = new ASSOC802_11*[5];
+	ASSOCUWB** assoc = new ASSOCUWB*[5];
 	//printf("My MAC address is %i\n",(u_int8_t*)mac_->addr());
-	assoc[0] = new ASSOC802_11(assoc[0]->MAC_Address,0x0006,(u_int8_t*)mac_->addr());
-	assoc[1] = new ASSOC802_11(assoc[1]->PAL_Capabilities_list,0x0004,(u_int8_t*)0x00000000);
+	assoc[0] = new ASSOCUWB(assoc[0]->MAC_Address,0x0006,(u_int8_t*)mac_->addr());
+	assoc[1] = new ASSOCUWB(assoc[1]->PAL_Capabilities_list,0x0004,(u_int8_t*)0x00000000);
 	//FixME : read the freq from the netif
-	assoc[2] = new ASSOC802_11(assoc[2]->Prefered_Channel_List,0x0001,(u_int8_t*)0x0B);//always connect to channel 11 2.462GHZ
+	assoc[2] = new ASSOCUWB(assoc[2]->Prefered_Channel_List,0x0001,(u_int8_t*)0x0B);//always connect to channel 11 2.462GHZ
 	//FixME : check for other connections
-	assoc[3] = new ASSOC802_11(assoc[3]->Connected_Channel,0x0001,(u_int8_t*)0x00);//always send no connections
-	assoc[4] = new ASSOC802_11(assoc[4]->PAL_Version,0x0005,(u_int8_t*)HCI_Read_Local_Version_Info());
+	assoc[3] = new ASSOCUWB(assoc[3]->Connected_Channel,0x0001,(u_int8_t*)0x00);//always send no connections
+	assoc[4] = new ASSOCUWB(assoc[4]->PAL_Version,0x0005,(u_int8_t*)HCI_Read_Local_Version_Info());
 
 	return (u_int8_t*)assoc;
 }
 
-void PAL802_11::HCI_Write_Remote_AMP_Assoc(AMPConnection* conn,u_int8_t* ampAssoc){
+void PALUWB::HCI_Write_Remote_AMP_Assoc(AMPConnection* conn,u_int8_t* ampAssoc){
 	conn->remoteAMPAssoc_ = ampAssoc;
-	conn->dAMPaddr_ = (int) (((ASSOC802_11**)ampAssoc)[0]->value_);
+	conn->dAMPaddr_ = (int) (((ASSOCUWB**)ampAssoc)[0]->value_);
 	if(conn->logicalChannel_ == NULL)
 	{
 		l2cap_->connection_highSpeed(conn,conn->dAMPaddr_,PSM_BNEP);
@@ -225,37 +225,37 @@ void PAL802_11::HCI_Write_Remote_AMP_Assoc(AMPConnection* conn,u_int8_t* ampAsso
 	conn->logicalChannel_->setRemoteAddress(conn->dAMPaddr_);
 
 }
-void PAL802_11::HCI_Reset(){
+void PALUWB::HCI_Reset(){
 	//TODO: destroy all existing AMP Physical links
 }
-int PAL802_11::HCI_Read_Failed_Contact_Counter(){
+int PALUWB::HCI_Read_Failed_Contact_Counter(){
 	//fixme: should be per logical link
 	return 0;//as the flush counter will never expire
 }
-u_int8_t PAL802_11::HCI_Read_Link_Quality(){
+u_int8_t PALUWB::HCI_Read_Link_Quality(){
 	//fixme:get link quality from MAC
 	return Link_Quality_;//it return 0x00 ie link quality indicator is not available
 }
 
-u_int8_t PAL802_11::HCI_Read_RSSI(){
+u_int8_t PALUWB::HCI_Read_RSSI(){
 	//fixme:get link RSSI from MAC
 	return RSSI_;//it return 0x81 ie  indicator is not available
 }
 
- void PAL802_11::HCI_Short_Range_mode(){}
- void PAL802_11::HCI_Write_Best_Effort_Flush_Timeout(u_int8_t){}
- u_int8_t PAL802_11::HCI_Read_Best_Effort_Flush_Timeout(){ return NULL;}
+ void PALUWB::HCI_Short_Range_mode(){}
+ void PALUWB::HCI_Write_Best_Effort_Flush_Timeout(u_int8_t){}
+ u_int8_t PALUWB::HCI_Read_Best_Effort_Flush_Timeout(){ return NULL;}
 
 //Events
- void PAL802_11::Physical_link_Loss_Early_Warning(){}
- void PAL802_11::Physical_Link_Recovery(){}
- void PAL802_11::Channel_Selected(){}
- void PAL802_11::Short_Range_Mode_Change_Completed() {}
+ void PALUWB::Physical_link_Loss_Early_Warning(){}
+ void PALUWB::Physical_Link_Recovery(){}
+ void PALUWB::Channel_Selected(){}
+ void PALUWB::Short_Range_Mode_Change_Completed() {}
 
 //Physical Link Manager functions
 //Implements operations on physical link includes physical link creation/acceptance/deletion plus channel selection
 //, security establishment and maintenance
- PhysLinkCompleteStatus PAL802_11::HCI_Create_Physical_Link(AMPConnection* conn){
+ PhysLinkCompleteStatus PALUWB::HCI_Create_Physical_Link(AMPConnection* conn){
 	 /*
 	  * 1) Determine the selected channel
 	  * (if MAC not in selected channel)
@@ -275,7 +275,7 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 
 	 //ToDo : change the netif freq to the freq in the assoc resp
 		/*
-		 * ASSOC802_11** assoc = (ASSOC802_11**) remote_amp_assoc;
+		 * ASSOCUWB** assoc = (ASSOCUWB**) remote_amp_assoc;
 		printf("Dest Mac address : %i\n",assoc[0]->value_);
 		printf("Dest PAL Cap : %i\n",assoc[1]->value_);
 		printf("Dest pref channel : %i\n",assoc[2]->value_);
@@ -299,7 +299,7 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 	 }
 
  }
- PhysLinkCompleteStatus PAL802_11::HCI_Accept_Physical_Link(AMPConnection* conn){
+ PhysLinkCompleteStatus PALUWB::HCI_Accept_Physical_Link(AMPConnection* conn){
 	 conn->physicalLinkState_ = Starting;
 	 if(!netif_->Is_node_on())
 	 {
@@ -318,16 +318,16 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 
 
  }
- void PAL802_11::HCI_Disconnect_Physical_Link(){}
+ void PALUWB::HCI_Disconnect_Physical_Link(){}
 
 //Actions
- void PAL802_11::Determine_Selected_Channel() {}
- void PAL802_11::Signal_MAC_Start_On_Channel(/*physical channel*/) {}
- void PAL802_11::MAC_Initiate_Handshake(AMPConnection* conn) {
+ void PALUWB::Determine_Selected_Channel() {}
+ void PALUWB::Signal_MAC_Start_On_Channel(/*physical channel*/) {}
+ void PALUWB::MAC_Initiate_Handshake(AMPConnection* conn) {
 	 //This function will make the MAC send a RTS message to the peering MAC
-	 //printf("Sending MAC Packet to %i\n",((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_);
+	 //printf("Sending MAC Packet to %i\n",((ASSOCUWB**)conn->remoteAMPAssoc_)[0]->value_);
 	 //printf("Sending MAC Packet to %i\n",conn->dAMPaddr_);
-	 //u_int8_t* dap = ((ASSOC802_11**)conn->remoteAMPAssoc_)[0]->value_;
+	 //u_int8_t* dap = ((ASSOCUWB**)conn->remoteAMPAssoc_)[0]->value_;
 	 //u_int8_t* dap = conn->dAMPaddr_;
 		Packet *p = Packet::alloc(10);
 		char *mh = (char*)p->access(hdr_mac::offset_);
@@ -342,28 +342,28 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 		//send auth packet
 		Scheduler& s = Scheduler::instance();
 		// let mac decide when to take a new packet from the queue.
-		//s.schedule(((Mac802_11*)mac_), p, 0);
+		//s.schedule(((Mac_IFControl*)mac_), p, 0);
 		s.schedule(ifq_, p, 0);
 
 
  }
 
- void PAL802_11::Cancel_MAC_Connect_Operation(/*physical channel*/) {}
- void PAL802_11::Signal_MAC_Start_To_Disconnect(/*physical channel*/) {}
+ void PALUWB::Cancel_MAC_Connect_Operation(/*physical channel*/) {}
+ void PALUWB::Signal_MAC_Start_To_Disconnect(/*physical channel*/) {}
 //Logical Link Manager functions
 //Implements operations on logical link includes logical link creation/deletion and applying QoS
- void PAL802_11::HCI_Flow_Spec_modify(){}
- void PAL802_11::HCI_Create_Logical_link(AMPConnection* c){
+ void PALUWB::HCI_Flow_Spec_modify(){}
+ void PALUWB::HCI_Create_Logical_link(AMPConnection* c){
 	 l2cap_->connection_complete_event(c->logicalChannel_->connhand(),0,1);
  }
- void PAL802_11::HCI_Accept_Logical_link(){}
- void PAL802_11::HCI_Disconnect_Logical_link(){}
+ void PALUWB::HCI_Accept_Logical_link(){}
+ void PALUWB::HCI_Disconnect_Logical_link(){}
 //Data Manager functions
 //Perform operations on data packets includes : transmit/receive/buffer management
- void PAL802_11::Encapsulate_Packet() {
+ void PALUWB::Encapsulate_Packet() {
  }
 //
-//	 void PAL802_11::sendDown(Packet* p)
+//	 void PALUWB::sendDown(Packet* p)
 //	 {
 //	 	hdr_cmn *ch = HDR_CMN(p);
 //	 	hdr_ip *ih = HDR_IP(p);
@@ -423,7 +423,7 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 //	 	}
 //	 }
 
- void PAL802_11::recv(Packet* p, Handler* callback = 0){
+ void PALUWB::recv(Packet* p, Handler* callback = 0){
 	 //printf("\n\n\nPAL802.11 has just received a packet from MAC 802.11\n\n\n");
 		hdr_pal *sh = HDR_PAL(p);
 		struct hdr_cmn *ch = HDR_CMN(p);
@@ -456,7 +456,7 @@ u_int8_t PAL802_11::HCI_Read_RSSI(){
 				//send auth packet
 				Scheduler& s = Scheduler::instance();
 				// let mac decide when to take a new packet from the queue.
-				//s.schedule(((Mac802_11*)mac_), rp, 0);
+				//s.schedule(((Mac_IFControl*)mac_), rp, 0);
 				s.schedule(ifq_, rp, 0);
 		}
 		break;

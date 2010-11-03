@@ -62,7 +62,7 @@ Packet Format
 #include "baseband.h"
 #include "lmp.h"
 #include "amp-PAL.h"
-#include "amp-PAL802_11.h"
+//#include "amp-PAL802_11.h"
 
 #define MAX_AMP_NUMBER						3
 //================
