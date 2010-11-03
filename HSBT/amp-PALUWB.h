@@ -31,13 +31,13 @@
  *
  */
 
-#ifndef __ns_amp_PAL802_11_h__
-#define __ns_amp_PAL802_11_h__
+#ifndef __ns_amp_PALUWB_h__
+#define __ns_amp_PALUWB_h__
 
 
 #include "amp-PAL.h"
 #include "packet.h"
-#include "mac-802_11.h"
+#include "mac-ifcontrol.h"
 
 
 	////////////////////////////////////
@@ -51,7 +51,7 @@
 	//+-------------------------------------------------+
 	//	1 Octet	|		2 Octets	|		Variable	|
 	//+-------------------------------------------------+
-	struct ASSOC802_11{
+	struct ASSOCUWB{
 		enum TypeID {
 			MAC_Address=0x01,//length = 0x0006
 			Prefered_Channel_List=0x02,//length = N
@@ -63,8 +63,8 @@
 		u_int16_t length_;
 		u_int8_t* value_;
 
-		ASSOC802_11(TypeID typeID,u_int16_t length,u_int8_t* value):typeID_(typeID),length_(length),value_(value) {}
-		ASSOC802_11(){}
+		ASSOCUWB(TypeID typeID,u_int16_t length,u_int8_t* value):typeID_(typeID),length_(length),value_(value) {}
+		ASSOCUWB(){}
 	};
 
 	////////////////////////////////////
@@ -72,7 +72,7 @@
 	////////////////////////////////////
 	//HCI Events
 	///////////////////////////////////
-	struct PAL802_11Event:public Event {
+	struct PALUWBEvent:public Event {
 	    enum EventType {
 	    	Channel_Selected,
 	    	Short_Range_Mode_Change_Completed,
@@ -99,19 +99,23 @@
 	    	HCI_Flow_Spec_Modify_complete
 	    };
 	    EventType eventType;
-	    ASSOC802_11 amp_assoc_;
-	    uchar short_Range_Mode_;
+	    ASSOCUWB amp_assoc_;
+	    uint8_t short_Range_Mode_;
 
-	    PAL802_11Event(ASSOC802_11 amp_assoc):eventType(Channel_Selected),amp_assoc_(amp_assoc) {}
-	    PAL802_11Event(uchar Short_Range_Mode):eventType(Short_Range_Mode_Change_Completed),short_Range_Mode_(Short_Range_Mode) {}
+	    PALUWBEvent(ASSOCUWB amp_assoc):eventType(Channel_Selected),amp_assoc_(amp_assoc) {}
+	    PALUWBEvent(uint8_t Short_Range_Mode):eventType(Short_Range_Mode_Change_Completed),short_Range_Mode_(Short_Range_Mode) {}
 
 	};
+
+
+
+
 
 class L2CAPChannel;
 class ConnectionHandle;
 class AMPConnection;
 
-class PAL802_11:public PAL{
+class PALUWB:public PAL {
     friend class BTNode;
     friend class  A2MP;
 public:
@@ -120,39 +124,40 @@ public:
   u_int32_t Max_PDU_Size_;// in octets largest allowed L2CAP PDU size//2312//
   u_int16_t AMP_ASSOC_Length_;//max size in octets of the requested AMP Assoc Structure(2octets)
   NsObject* ifq_;
+
 	enum LogicalLinkStatus{
 		Command_Disallowed=0x0C,
 		Success=0x00
 	};
 
-static const u_int8_t PAL_Version_=0x01;//TODO:get from Bluetooth assigned numbers
-static const u_int16_t PAL_Company_Identifier_ = 0x0001;
-static const u_int16_t PAL_Sub_version_ =0x0001;//vendor specified
-static const u_int32_t Total_Bandwidth_ =30000;//for now assign 30Mbps //Bandwidth unit is Kbps (4octets)
-static const u_int8_t Controller_ID_ =0x01;//802.11 AMP
-static const u_int8_t Controller_Type_ =0x01;//802.11 AMP
-static const u_int16_t palCapabilities_ =0x0000;//Guaranteed service type is not supported by this PAL(2octets)
-static const u_int32_t Max_Flush_Timeout_ =0xFFFFFFFF;//Max time period in microseconds AMP device attempt to transmit a frame on a guaranteed link (currently set to infinity)
-static const u_int32_t Best_Effort_Flush_Timeout_ =0xFFFFFFFF;//Max time period in microseconds AMP device attempt to transmit a frame on a best effort link (currently set to infinity)
-static const u_int8_t Link_Quality_ =0x00;// Range 0x00<N<0xFF where 0x00 is link quality indicator is  not available
-static const u_int8_t RSSI_ =0x81;//arriving signal strength in dBm (0x81 or -127dBm is indicator not available) best case -42dBm or 0xAA
-static const u_int8_t Short_Range_Mode_ =0x00;//disabled change to 0x01 to enable
+	static const u_int8_t PAL_Version_=0x01;//TODO:get from Bluetooth assigned numbers
+	static const u_int16_t PAL_Company_Identifier_ = 0x0001;
+	static const u_int16_t PAL_Sub_version_ =0x0001;//vendor specified
+	static const u_int32_t Total_Bandwidth_ =1320000000;//for now assign 1320Mbps //Bandwidth unit is Kbps (4octets)
+	static const u_int8_t Controller_ID_ =0x02;//UWB AMP
+	static const u_int8_t Controller_Type_ =0x02;//UWB AMP
+	static const u_int16_t palCapabilities_ =0x0000;//Guaranteed service type is not supported by this PAL(2octets)
+	static const u_int32_t Max_Flush_Timeout_ =0xFFFFFFFF;//Max time period in microseconds AMP device attempt to transmit a frame on a guaranteed link (currently set to infinity)
+	static const u_int32_t Best_Effort_Flush_Timeout_ =0xFFFFFFFF;//Max time period in microseconds AMP device attempt to transmit a frame on a best effort link (currently set to infinity)
+	static const u_int8_t Link_Quality_ =0x00;// Range 0x00<N<0xFF where 0x00 is link quality indicator is  not available
+	static const u_int8_t RSSI_ =0x81;//arriving signal strength in dBm (0x81 or -127dBm is indicator not available) best case -42dBm or 0xAA
+	static const u_int8_t Short_Range_Mode_ =0x00;//disabled change to 0x01 to enable
 
-////////////////////////////////////
-//          Constants	          //
-////////////////////////////////////
-static const u_int8_t ConnectionAcceptTimeOut =5;//in seconds
-static const u_int32_t Max80211PALPDUSize =1492;//in octets
-static const u_int8_t MinGUserPrio =4;//min priority in the guaranteed link
-static const u_int8_t MaxGUserPrio =7;//max priority in the guaranteed link
-static const u_int8_t BEUserPrio0 =0;//priority in the best effort link
-static const u_int8_t BEUserPrio1 =3;//priority in the best effort link
-static const u_int32_t Max80211BeaconPeriod =2000;//in millisecond
-static const u_int32_t Max80211AMPASSOCLen =672;//in Octets
-static const u_int8_t ShortRangeModePowerMax_ =4;//in dBm
+	////////////////////////////////////
+	//          Constants	          //
+	////////////////////////////////////
+	static const u_int8_t ConnectionAcceptTimeOut =5;//in seconds
+	static const u_int32_t Max80211PALPDUSize =1492;//in octets
+	static const u_int8_t MinGUserPrio =4;//min priority in the guaranteed link
+	static const u_int8_t MaxGUserPrio =7;//max priority in the guaranteed link
+	static const u_int8_t BEUserPrio0 =0;//priority in the best effort link
+	static const u_int8_t BEUserPrio1 =3;//priority in the best effort link
+	static const u_int32_t Max80211BeaconPeriod =2000;//in millisecond
+	static const u_int32_t Max80211AMPASSOCLen =672;//in Octets
+	static const u_int8_t ShortRangeModePowerMax_ =4;//in dBm
 
 public:
-    PAL802_11();
+    PALUWB();
 
 	//send packet to the L2CAP
     void sendUp(Packet *, Handler *);
@@ -161,9 +166,7 @@ public:
 
     void on();//fixme : see if they can be written once for all PALs
     void _init();
-    //struct Version_Info;
     Version_Info* HCI_Read_Local_Version_Info();
-    //struct AMP_Info;
     AMP_Info* HCI_Read_Local_AMP_Info();
     u_int8_t* HCI_Read_Local_AMP_Assoc();
     void HCI_Write_Remote_AMP_Assoc(AMPConnection*,u_int8_t*);
@@ -186,7 +189,6 @@ public:
     //Physical Link Manager functions
     //Implements operations on physical link includes physical link creation/acceptance/deletion plus channel selection
     //, security establishment and maintenance
-     //struct PhysLinkCompleteStatus;
      PhysLinkCompleteStatus HCI_Create_Physical_Link(AMPConnection*);
      PhysLinkCompleteStatus HCI_Accept_Physical_Link(AMPConnection*);
      void HCI_Disconnect_Physical_Link();
@@ -211,4 +213,4 @@ public:
 };
 
 
-#endif				// __ns_amp_PAL802_11_h__
+#endif				// __ns_amp_PALUWB_h__

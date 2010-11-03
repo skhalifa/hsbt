@@ -4,7 +4,8 @@ LMP set debug_ 0
 Mac/BNEP set debug_ 0
 SDP set debug_ 0
 A2MP set debug_ 0
-PAL/802_11 set debug_ 0 
+PAL/802_11 set debug_ 0
+PAL/UWB set debug_ 0 
 BTChannel set debug_ 0
 
 Baseband set T_w_inquiry_scan_ 0
@@ -180,14 +181,14 @@ Node/BTNode instproc init args {
 #
 #set val(chan)   Channel/WirelessChannel    ;# channel type
 #set val(prop)   Propagation/TwoRayGround   ;# radio-propagation model
-#set val(palType) PAL/802_11
+#set val(palType) PAL/802_11 or PAL/UWB
 #set topo       [new Topography]
 #set chan [new $val(chan)];#Create wireless channel
 #$node add-PAL $val(palType) $topo $chan $val(prop)
 		
 Node/BTNode instproc add-PAL {palType version topo channel pmodel \
 				txPower_ rxPower_ idlePower_ sleepPower_ \
-				transitionPower_ transitionTime_ } {
+				transitionPower_ transitionTime_ modulationInstance_ } {
 	if {$palType == "PAL/802_11"} {
 		if { $version != "802.11b" && $version != "802.11g"} {
 			error "Currently only these 802.11 versions are supported : 802.11b and 802.11g"
@@ -599,8 +600,382 @@ Node/BTNode instproc add-PAL {palType version topo channel pmodel \
 		#$pal_ setup [AddrParams addr2id $args] $mac $l2cap_ $a2mp $self
 		$pal_ _init
 		
+	} elseif {$palType == "PAL/UWB"} {
+		
+		Mac set bandwidth_ 1320Mb
+		Mac/802_11 set basicRate_ 0  ;# set this to 0 if want to use bandwidth_ for 
+		Mac/802_11 set dataRate_ 0   ;# both control and data pkts
+		Mac/802_11 set bandwidth_ 1320Mb
+		Mac/IFControl set PLCPDataRate_ 1320e6
+		
+		set a2mp_ [$self set a2mp_]
+		set l2cap_ [$self set l2cap_]
+		set bnep_ [$self set bnep_]
+		
+		set ns [Simulator instance]
+		set imepflag [$ns imep-support]
+		
+		set ifq		[new Queue/DropTail/PriQueue]		;# interface queue
+		set pal_	[new $palType]
+		set prop	[new $pmodel]
+		set netif	[new Phy/WirelessPhy/InterferencePhy]		;# interface
+		set mac		[new Mac/IFControl]		;# mac layer
+        	set ant		[new Antenna/OmniAntenna]
+		
+		# Only create 1 instance of modulation
+		#if { [Simulator set modulationInstCreated_] == 0} {
+		#	warn "Both modulationType and modulationInstance are set. modulationType is ignored."
+		#} else {
+		#	set modulationInstance_ [new Modulation/CodedPPM]
+		#	Simulator set modulationInstCreated_ 1
+		#}
+		
+		
+			#
+	# Interface Queue
+	#
+	$ifq target $mac
+	$ifq set limit_ 99999999
+	#$pal_ down-target $ifq
+	#$ifq drop-target $drpT
+
+		set namfp [$ns get-nam-traceall]
+		
+		######### I have no idea what are the following lines needed for ##########
+		# errProc_ and FECProc_ are an option unlike other 
+	        # parameters for node interface
+        	$ns instvar inerrProc_ outerrProc_ FECProc_
+		if ![info exist inerrProc_] {
+			set inerrProc_ ""
+		}
+		if ![info exist outerrProc_] {
+			set outerrProc_ ""
+		}
+		if ![info exist FECProc_] {
+			set FECProc_ ""
+		}
+		set inerr ""
+		if {$inerrProc_ != ""} {
+			set inerr [$inerrProc_]
+		}
+		set outerr ""
+		if {$outerrProc_ != ""} {
+			set outerr [$outerrProc_]
+		}
+		set fec ""
+		if {$FECProc_ != ""} {
+			set fec [$FECProc_]
+		}
+		###########################################################################
+		
+		###############################IMEP Beaconing #############################
+#	        if {$imepflag == "ON" } {              
+#			# IMEP layer
+#			set imep [new Agent/IMEP [$btnode_ id]]
+#			set drpT [$self mobility-trace Drop "RTR"]
+#			if { $namfp != "" } {
+#				$drpT namattach $namfp
+#			}
+#			$imep drop-target $drpT
+#			$ns at 0.[$btnode_ id] "$imep start"   ;# start beacon timer
+#	        }
+#		if {$imepflag == "ON" } {
+#			$imep recvtarget [$self entry]
+#			$imep sendtarget $ll
+#			$ll up-target $imep
+#	        } else {
+#			$ll up-target [$self entry]
+#		}
+		#############################################################################
+		#
+		# Local Variables
+		#
+		set nullAgent_ [$ns set nullAgent_]
+		
+		
+		#
+		# A2MP Layer
+		#
+		$a2mp_ add-pal $pal_
+		
+		#
+		# PAL Layer
+		#
+		#$pal_($t) up-target $l2cap_
+		#$pal_($t) down-target $mac
+		$pal_ l2cap $l2cap_
+		$pal_ mac $mac
+		$pal_ btnode $self
+		$pal_ a2mp $a2mp_
+		$pal_ netif $netif
+		$pal_ ifq $ifq
+	
+		#
+		# Interface Queue
+		# TODO : do those changes by adding another interface queue to the L2CAP
+	#	$ifq target $mac
+	#	$ifq set limit_ $qlen
+	#	if {$imepflag != ""} {
+	#		set drpT [$self mobility-trace Drop "IFQ"]
+	#	} else {
+	#		set drpT [cmu-trace Drop "IFQ" $self]
+	#        }
+	#	$ifq drop-target $drpT
+	#	if { $namfp != "" } {
+	#		$drpT namattach $namfp
+	#	}
+	#	if {[$ifq info class] == "Queue/XCP"} {		
+	#		$mac set bandwidth_ [$ll set bandwidth_]
+	#		$mac set delay_ [$ll set delay_]
+	#		$ifq set-link-capacity [$mac set bandwidth_]
+	#		$ifq queue-limit $qlen
+	#		$ifq link $ll
+	#		$ifq reset
+	#		
+	#	}
+	
+		#
+		# Mac Layer
+		#
+
+		
+		$mac up-target $pal_
+		$mac netif $netif
+		
+	
+		if {$outerr == "" && $fec == ""} {
+			$mac down-target $netif
+		} elseif {$outerr != "" && $fec == ""} {
+			$mac down-target $outerr
+			$outerr target $netif
+		} elseif {$outerr == "" && $fec != ""} {
+			$mac down-target $fec
+			$fec down-target $netif
+		} else {
+			$mac down-target $fec
+			$fec down-target $outerr
+			$err target $netif
+		}
+		#Implement the god for bluetooth nodes
+#		Quoted from CMU document on god, "God (General Operations Director) is the object 
+#		that is used to store global information about the state of the environment, 
+#		network or nodes that an omniscent observer would have, but that should not be made known 
+#		to any participant in the simulation." Currently, God object stores the total number of mobilenodes 
+#		and a table of shortest number of hops required to reach from one node to another. 
+#		The next hop information is normally loaded into god object from movement pattern files,
+#		before simulation begins, since calculating this on the fly during simulation runs can be quite time consuming.
+#		However, in order to keep this example simple we avoid using movement pattern files and 
+#		thus do not provide God with next hop information. The usage of movement pattern files and 
+#		feeding of next hop info to God shall be shown in the example in the next sub-section.
+#
+#		The procedure create-god is defined in ~ns/tcl/mobility/com.tcl, 
+#		which allows only a single global instance of the God object to be created during a simulation. 
+#		In addition to the evaluation functionalities, the God object is called internally by MAC objects in mobilenodes.
+#		So even though we may not utilise God for evaluation purposes,(as in this example) we still need to create God. 
+
+			set god_ [God instance]
+		       # if {$mactype == "Mac/802_11"} {
+				$mac nodes [$god_ num_nodes]
+			#}
+		
+		
+		#
+		# Network Interface
+		#
+		#if {$fec == ""} {
+	        #		$netif up-target $mac
+		#} else {
+	        #		$netif up-target $fec
+		#	$fec up-target $mac
+		#}
+		
+
+		$netif channel $channel
+		if {$inerr == "" && $fec == ""} {
+			$netif up-target $mac
+		} elseif {$inerr != "" && $fec == ""} {
+			$netif up-target $inerr
+			$inerr target $mac
+		} elseif {$err == "" && $fec != ""} {
+			$netif up-target $fec
+			$fec up-target $mac
+		} else {
+			$netif up-target $inerr
+			$inerr target $fec
+			$fec up-target $mac
+		}
+	
+		$netif propagation $prop	;# Propagation Model
+		#puts "modulationInstance_ = ///-$modulationInstance_-///"
+		if {[info exists modulationInstance_]} {
+			if {[$netif info class] == "Phy/WirelessPhy/InterferencePhy"} {
+				puts "\n\n\nAdded Modulation instance \n\n"
+				$netif modulation $modulationInstance_	;# Modulation Model
+			}
+		}
+#			} else {
+#				error "\n\n\nFailed to Add Modulation instance \n\n"
+#			}
+#		} else {
+#			error "\n\n\nModulation instance Does not exist\n\n"
+#		}
+		
+		#$netif node $pal_		;#Test: add the interface to the 802_11PAL which extends mobilenode Bind PAL <---> interface
+		$netif node $self		;# Bind node <---> interface (checked (mac/wirelessphy.cc): OK)
+		$netif antenna $ant
+		$netif NodeOff
+		
+		
+		#
+		# Network interface energy model
+		#
+		# set transmission power
+	        if [info exists txPower_] {
+			$netif setTxPower $txPower_
+	        }
+		# set receiving power
+	        if [info exists rxPower_] {
+			$netif setRxPower $rxPower_
+	        }
+		# set idle power -- Chalermek
+	        if [info exists idlePower_] {
+			$netif setIdlePower $idlePower_
+	        }
+	#
+		if [info exists sleepPower_] {
+			$netif setSleepPower $sleepPower_
+	        }
+		if [info exists transitionPower_] {
+			$netif setTransitionPower $transitionPower_
+	        }
+		if [info exists transitionTime_] {
+			$netif setTransitionTime $transitionTime_
+	        }
+		
+		#
+		# Physical Channel
+		#
+		$channel addif $netif
+		
+	        # List-based improvement
+		# For nodes talking to multiple channels this should
+		# be called multiple times for each channel
+		$channel add-node $self	;#FIXED need testing : (mac/channel.cc)could lead to a problem as it deals 
+						;#with mobile nodes WirelessChannel::addNodeToList(MobileNode *mn)	
+	
+		# let topo keep handle of channel
+		$topo channel $channel
+		# ============================================================
+#			set tracefd [$ns get-ns-traceall]
+#	if {[Simulator set MacTrace_] == "ON" && $tracefd != "" } {
+#		# puts "tracefile : $tracefd"
+#		set sndT [bt-trace Send MAC $self]
+#		$bnep_ down-target $sndT
+#		$sndT target $phy_
+#		$mac_ drop-target [bt-trace Drop MAC $self]
+#		set rcvT [bt-trace Recv MAC $self]
+#		$phy_ up-target $rcvT
+#		$rcvT target $bb_
+#
+#		if {$namtracefd != "" } {
+#		    $sndT namattach $namtracefd
+#		    $rcvT namattach $namtracefd
+#		}
+#	}
+#	###################log#######################
+
+		if { [Simulator set MacTrace_] == "ON" } {
+			#
+			# Trace RTS/CTS/ACK Packets
+			#
+			if {$imepflag != ""} {
+				set rcvT [$self mobility-trace Recv "MAC"]
+			} else {
+				set rcvT [bt-trace Recv "MAC" $self]
+				#set rcvT [cmu-trace Recv "MAC" $self]
+				#set rcvT [$self mobility-trace Recv "MAC"]
+			}
+			$mac log-target $rcvT
+			if { $namfp != "" } {
+				$rcvT namattach $namfp
+			}
+			#
+			# Trace Sent Packets
+			#
+			if {$imepflag != ""} {
+				set sndT [$self mobility-trace Send "MAC"]
+			} else {
+				set sndT [bt-trace Send "MAC" $self]
+				#set sndT [cmu-trace Send "MAC" $self]
+				#set sndT [$self mobility-trace Send "MAC"]
+			}
+			$sndT target [$mac down-target]
+			$mac down-target $sndT
+			if { $namfp != "" } {
+				$sndT namattach $namfp
+			}
+			#
+			# Trace Received Packets
+			#
+			if {$imepflag != ""} {
+				set rcvT [$self mobility-trace Recv "MAC"]
+			} else {
+				set rcvT [bt-trace Recv "MAC" $self]
+				#set rcvT [cmu-trace Recv "MAC" $self]
+				#set rcvT [$self mobility-trace Recv "MAC"]
+			}
+			$rcvT target [$mac up-target]
+			$mac up-target $rcvT
+			if { $namfp != "" } {
+				$rcvT namattach $namfp
+			}
+			#
+			# Trace Dropped Packets
+			#
+			if {$imepflag != ""} {
+				set drpT [$self mobility-trace Drop "MAC"]
+			} else {
+				set drpT [bt-trace Drop "MAC" $self]
+				#set drpT [cmu-trace Drop "MAC" $self]
+				#set drpT [$self mobility-trace Drop "MAC"]
+			}
+			$mac drop-target $drpT
+			if { $namfp != "" } {
+				$drpT namattach $namfp
+			}
+		} else {
+			$mac log-target [$ns set nullAgent_]
+			$mac drop-target [$ns set nullAgent_]
+		}
+	###################End log#######################
+	# change wrt Mike's code
+	       if { [Simulator set EotTrace_] == "ON" } {
+	               #
+	               # Also trace end of transmission time for packets
+	               #
+	
+	               if {$imepflag != ""} {
+	                       set eotT [$self mobility-trace EOT "MAC"]
+	               } else {
+	                       set eoT [bt-trace EOT "MAC" $self]
+			       #set eoT [cmu-trace EOT "MAC" $self]
+			       #set eotT [$self mobility-trace EOT "MAC"]
+	               }
+	               $mac eot-target $eotT
+	       }
+	
+	
+	
+		# ============================================================
+		
+		#$pal_ addif $netif 	;#Test: add the interface to the 802_11PAL which extends mobilenode
+		$self addif $netif	;#FIXED and checked : add the wireless phy to the node (mobilenode.cc) now added to bt-node.cc
+		
+		#$pal_ setup [AddrParams addr2id $args] $mac $l2cap_ $a2mp $self
+		$pal_ _init
+		
 	} else	{
-		error "Currently only these PAL values are supported (add-PAL): PAL/802_11"
+		error "Currently only these PAL values are supported (add-PAL): PAL/802_11 and PAL/UWB"
 	}
 
 
@@ -633,7 +1008,6 @@ Node/BTNode instproc mobility-trace { ttype atype } {
 
 Node/BTNode instproc rt {rtagent} {
         $self instvar mac_ bnep_ sdp_ a2mp_ l2cap_ lmp_ bb_ ll_ arptable_ classifier_ dmux_ entry_ ragent_ 
-
 	set addr [$self node-addr]
 
 	switch -exact $rtagent {
