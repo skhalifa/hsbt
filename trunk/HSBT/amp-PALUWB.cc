@@ -131,7 +131,7 @@ void PALUWB::sendDown(AMPConnection* conn,Packet *p){
 
 		/////////////////////////
 	 //printf("Sending MAC Packet to %i\n",((ASSOCUWB**)conn->remoteAMPAssoc_)[0]->value_);
-	 //printf("I'm %i Sending MAC Packet to %i with BT daddr_%i\n",mac_->addr(),conn->dAMPaddr_,conn->dBTaddr_);
+	 printf("I'm %i Sending MAC Packet to %i with BT daddr_%i\n",mac_->addr(),conn->dAMPaddr_,conn->dBTaddr_);
 	hdr_cmn *ch = HDR_CMN(p);
 	 //printf("PAL uid %i\n",ch->uid());
 	hdr_bt *bh = HDR_BT(p);
@@ -184,9 +184,16 @@ void PALUWB::sendDown(AMPConnection* conn,Packet *p){
 //	}
 
 //	printf("Queue size 1 = %i\n",((Queue*)ifq_)->length());
-	Scheduler& s = Scheduler::instance();
+//	hdr_ip *ih = HDR_IP(p);
+//
+//	printf("\nPAL UWB received packet %i\n",ih->flowid());
+
+	printf("Node %i queue length is %i\n",mac_->addr(),((Queue*)ifq_)->length());
+		Scheduler& s = Scheduler::instance();
+		s.schedule(ifq_, p,0);
+
 //	s.schedule(((Mac_IFControl*)mac_), p,0);
-	s.schedule(ifq_, p,0);
+
 //	printf("Queue size 2 = %i\n",((Queue*)ifq_)->length());
 	}
 
