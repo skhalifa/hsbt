@@ -616,6 +616,7 @@ Mac_IFControl::txtime(int psz, int channel_code)
 	assert(basicrate > 0 && datarate > 0);
 	double t = (((double)plcp_hdr)/(netif_->bitrate() * basicrate)) +
 		(((double)datalen)/(netif_->bitrate() * datarate));
+	assert (t > 0.0);
 	return(t);
 }
 
