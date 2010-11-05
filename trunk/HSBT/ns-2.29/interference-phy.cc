@@ -538,7 +538,11 @@ InterferencePhy::startRecvPkt(int select)
 				/*
 				 * schedule reception of full packet
 				 */
-				recv_timer.resched(i->rxEndTime-now);
+				double delay = i->rxEndTime-now;
+				if(delay < 0){
+					delay =0.00000001;
+				}
+				recv_timer.resched(delay);
 
 #ifdef INTERFERENCEPHY_DEBUG
 				struct hdr_cmn *hdr = HDR_CMN(i->p);
