@@ -115,7 +115,7 @@ Node/BTNode instproc init args {
 	    	idlePower_ sleepPower_ transitionPower_ transitionTime_ \
 	    	level1_ level2_
 	
-        eval $self next $args
+	eval $self next $args
 
 	set bnep_ [new Mac/BNEP]
 	set mac_ $bnep_
@@ -601,12 +601,31 @@ Node/BTNode instproc add-PAL {palType version topo channel pmodel \
 		$pal_ _init
 		
 	} elseif {$palType == "PAL/UWB"} {
+
+		Phy/WirelessPhy/InterferencePhy set Pt_ 0.280e-3
+		# taken from Community Wireless Project FAQ (between -80 and -96 dbm)
+		Phy/WirelessPhy/InterferencePhy set CSThresh_ 2.5e-13;
+		# center frequency
+		Phy/WirelessPhy/InterferencePhy set freq_ 4e+9
+		Phy/WirelessPhy/InterferencePhy set frequency_range_ 1.75e+9
+		Phy/WirelessPhy/InterferencePhy set use_timehopping_ 1
+		Phy/WirelessPhy/InterferencePhy set bitrate_ 1320Mb
+		Phy/WirelessPhy/InterferencePhy set erasure_coefficient_ 5
 		
+		Mac/IFControl set RTSThreshold 0
+		Mac/802_11    set RTSThreshold 0
+		
+		# set all MAC capacity to 18MBit as well
 		Mac set bandwidth_ 1320Mb
 		Mac/802_11 set basicRate_ 0  ;# set this to 0 if want to use bandwidth_ for 
 		Mac/802_11 set dataRate_ 0   ;# both control and data pkts
 		Mac/802_11 set bandwidth_ 1320Mb
 		Mac/IFControl set PLCPDataRate_ 1320e6
+		
+		Phy/WirelessPhy/InterferencePhy set bandwidth_ 1.75e+9
+		Phy/WirelessPhy/InterferencePhy set use_timehopping_ 1
+		Phy/WirelessPhy/InterferencePhy set preamble_time_ 10e-6   ;#[expr $preamble * 1e-9] ;# short premable 10us
+			
 		
 		set a2mp_ [$self set a2mp_]
 		set l2cap_ [$self set l2cap_]
