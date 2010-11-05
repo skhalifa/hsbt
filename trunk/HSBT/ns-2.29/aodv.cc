@@ -299,6 +299,7 @@ double total_latency = 0.0;
 
 static void
 aodv_rt_failed_callback(Packet *p, void *arg) {
+printf("\nAODV FAILED CALLBACK\n");
   ((AODV*) arg)->rt_ll_failed(p);
 }
 
@@ -465,7 +466,9 @@ aodv_rt_entry *rt;
  ch->xmit_failure_ = aodv_rt_failed_callback;
  ch->xmit_failure_data_ = (void*) this;
 	rt = rtable.rt_lookup(ih->daddr());
+	printf("\nAODV rt=%i\n",rt);
  if(rt == 0) {
+	 printf("\nAODV Resolve Add to rt table\n");
 	  rt = rtable.rt_add(ih->daddr());
  }
 
@@ -475,14 +478,17 @@ aodv_rt_entry *rt;
 	
  if(rt->rt_flags == RTF_UP) {
    assert(rt->rt_hops != INFINITY2);
+   printf("\nAODV Resolve forward\n");
    forward(rt, p, NO_DELAY);
  }
  /*
   *  if I am the source of the packet, then do a Route Request.
   */
 	else if(ih->saddr() == index) {
+		printf("\nAODV Resolve I'm source\n");
    rqueue.enque(p);
    if (rt->rt_flags != RTF_WAIT_LINK_OPT) {
+	   printf("\nAODV Resolve I'm source sendRequest to %i\n",rt->rt_dst);
    	sendRequest(rt->rt_dst);
    }
  }
@@ -490,6 +496,7 @@ aodv_rt_entry *rt;
   *	A local repair is in progress. Buffer the packet. 
   */
  else if (rt->rt_flags == RTF_IN_REPAIR) {
+	 printf("\nAODV Resolve local repair\n");
    rqueue.enque(p);
  }
 
@@ -515,7 +522,7 @@ aodv_rt_entry *rt;
    fprintf(stderr, "%s: sending RERR...\n", __FUNCTION__);
 #endif
    sendError(rerr, false);
-
+   printf("\nAODV Resolve Drop no route\n");
    drop(p, DROP_RTR_NO_ROUTE);
  }
 
@@ -578,7 +585,7 @@ void
 AODV::recv(Packet *p, Handler*) {
 struct hdr_cmn *ch = HDR_CMN(p);
 struct hdr_ip *ih = HDR_IP(p);
-//printf("AODV recieved packet %i - from %i to %i \n",(ch->ptype()),ih->saddr(),ih->daddr());
+printf("\nAODV @ %f I %i recieved packet of type %i - from %i to %i \n",CURRENT_TIME,index,(ch->ptype()),ih->saddr(),ih->daddr());
  assert(initialized());
  //assert(p->incoming == 0);
  // XXXXX NOTE: use of incoming flag has been depracated; In order to track direction of pkt flow, direction_ in hdr_cmn is used instead. see packet.h for details.
@@ -586,6 +593,7 @@ struct hdr_ip *ih = HDR_IP(p);
  if(ch->ptype() == PT_AODV) {
    ih->ttl_ -= 1;
    recvAODV(p);
+   printf("\nAODV receive AODV\n");
    return;
  }
 
@@ -608,6 +616,7 @@ if((ih->saddr() == index) && (ch->num_forwards() == 0)) {
   */
 else if(ih->saddr() == index) {
    drop(p, DROP_RTR_ROUTE_LOOP);
+   printf("\nAODV Drop as I'm the sender\n");
    return;
  }
  /*
@@ -619,20 +628,27 @@ else if(ih->saddr() == index) {
   */
    if(--ih->ttl_ == 0) {
      drop(p, DROP_RTR_TTL);
+     printf("\nAODV Drop TTL =0\n");
      return;
    }
  }
 // Added by Parag Dadhania && John Novatnack to handle broadcasting
- if ( (u_int32_t)ih->daddr() != IP_BROADCAST)
-   rt_resolve(p);
- else
+ if ( (u_int32_t)ih->daddr() != IP_BROADCAST){
+	 printf("\nAODV Resolve IP\n");
+	 rt_resolve(p);
+ }else{
+	 printf("\nAODV forward\n");
    forward((aodv_rt_entry*) 0, p, NO_DELAY);
+ }
 }
 
 
 void
 AODV::recvAODV(Packet *p) {
+
  struct hdr_aodv *ah = HDR_AODV(p);
+
+ printf("\nAODV I'm %i recieved AODV packet of type %i\n",index,ah->ah_type);
 
  assert(HDR_IP (p)->sport() == RT_PORT);
  assert(HDR_IP (p)->dport() == RT_PORT);
@@ -672,6 +688,7 @@ struct hdr_ip *ih = HDR_IP(p);
 struct hdr_aodv_request *rq = HDR_AODV_REQUEST(p);
 aodv_rt_entry *rt;
 
+printf("\nAODV I'm %i recieved AODV Request packet- from %i to %i \n",index,ih->saddr(),ih->daddr());
   /*
    * Drop if:
    *      - I'm the source
@@ -679,6 +696,7 @@ aodv_rt_entry *rt;
    */
 
   if(rq->rq_src == index) {
+	  printf("\nAODV recvRequest myself free\n");
 #ifdef DEBUG
     fprintf(stderr, "%s: got my own REQUEST\n", __FUNCTION__);
 #endif // DEBUG
@@ -687,7 +705,7 @@ aodv_rt_entry *rt;
   } 
 
  if (id_lookup(rq->rq_src, rq->rq_bcast_id)) {
-
+	 printf("\nAODV recvRequest lookup free\n");
 #ifdef DEBUG
    fprintf(stderr, "%s: discarding request\n", __FUNCTION__);
 #endif // DEBUG
@@ -762,7 +780,7 @@ rt_update(rt0, rq->rq_src_seqno, rq->rq_hop_count, ih->saddr(),
  // First check if I am the destination ..
 
  if(rq->rq_dst == index) {
-
+	 printf("\nAODV recvRequest I'm destination so send reply\n");
 #ifdef DEBUG
    fprintf(stderr, "%d - %s: destination sending reply\n",
                    index, __FUNCTION__);
@@ -788,7 +806,7 @@ rt_update(rt0, rq->rq_src_seqno, rq->rq_hop_count, ih->saddr(),
 
  else if (rt && (rt->rt_hops != INFINITY2) && 
 	  	(rt->rt_seqno >= rq->rq_dst_seqno) ) {
-
+	 printf("\nAODV recvRequest I'm NOT destination so send reply\n");
    //assert (rt->rt_flags == RTF_UP);
    assert(rq->rq_dst == rt->rt_dst);
    //assert ((rt->rt_seqno%2) == 0);	// is the seqno even?
@@ -825,6 +843,7 @@ rt_update(rt0, rq->rq_src_seqno, rq->rq_hop_count, ih->saddr(),
   * Can't reply. So forward the  Route Request
   */
  else {
+	 printf("\nAODV recvRequest Can't reply. So forward the  Route Request\n");
    ih->saddr() = index;
    ih->daddr() = IP_BROADCAST;
    rq->rq_hop_count += 1;
@@ -1018,7 +1037,7 @@ struct hdr_cmn *ch = HDR_CMN(p);
 struct hdr_ip *ih = HDR_IP(p);
 
  if(ih->ttl_ == 0) {
-
+	 printf("\nAODV Forward TTl=o Drop\n");
 #ifdef DEBUG
   fprintf(stderr, "%s: calling drop()\n", __PRETTY_FUNCTION__);
 #endif // DEBUG
@@ -1030,6 +1049,7 @@ struct hdr_ip *ih = HDR_IP(p);
  if (ch->ptype() != PT_AODV && ch->direction() == hdr_cmn::UP &&
 	((u_int32_t)ih->daddr() == IP_BROADCAST)
 		|| (ih->daddr() == here_.addr_)) {
+	 printf("\nAODV Forward UP\n");
 	dmux_->recv(p,0);
 	return;
  }
@@ -1054,11 +1074,13 @@ if (ih->daddr() == (nsaddr_t) IP_BROADCAST) {
    /*
     *  Jitter the sending of broadcast packets by 10ms
     */
+   printf("\nAODV Forward Down\n");
    Scheduler::instance().schedule(target_, p,
       				   0.01 * Random::uniform());
  }
  else { // Not a broadcast packet 
-   if(delay > 0.0) {
+	   printf("\nAODV Forward Down 2\n");
+	if(delay > 0.0) {
      Scheduler::instance().schedule(target_, p, delay);
    }
    else {
@@ -1087,12 +1109,14 @@ aodv_rt_entry *rt = rtable.rt_lookup(dst);
   */
 
  if (rt->rt_flags == RTF_UP) {
+printf("\nAODV send Free rt->rt_flags (%i)== RTF_UP(%i) \n",rt->rt_flags,RTF_UP);
    assert(rt->rt_hops != INFINITY2);
    Packet::free((Packet *)p);
    return;
  }
 
- if (rt->rt_req_timeout > CURRENT_TIME) {
+if (rt->rt_req_timeout > CURRENT_TIME) {
+	 printf("\nAODV send Free rt->rt_req_timeout(%f) > CURRENT_TIME (%f) \n",rt->rt_req_timeout,CURRENT_TIME);
    Packet::free((Packet *)p);
    return;
  }
@@ -1108,6 +1132,7 @@ aodv_rt_entry *rt = rtable.rt_lookup(dst);
    while ((buf_pkt = rqueue.deque(rt->rt_dst))) {
        drop(buf_pkt, DROP_RTR_NO_ROUTE);
    }
+   printf("\nAODV send Free retries limit\n");
    Packet::free((Packet *)p);
    return;
  }
@@ -1190,6 +1215,7 @@ aodv_rt_entry *rt = rtable.rt_lookup(dst);
  rq->rq_timestamp = CURRENT_TIME;
  //Handler* h =0;
  //target_->recv(p,h);
+ printf("\nAODV send Packet successfully\n");
  Scheduler::instance().schedule(target_, p, 0.);
 
 }
