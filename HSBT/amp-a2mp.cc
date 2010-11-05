@@ -474,7 +474,7 @@ void A2MP::recv(Packet * p, L2CAPChannel * ch) {
 
 	case A2MP_CreatePhysicalLinkResponse:
 	{
-		printf("Got A2MP_CreatePhysicalLinkResponse.\n");
+		printf("Got A2MP_PhysicalLinkResponse from %i.\n",ch->_bd_addr);
 		AMPConnection* c = lookupConnection(ch->_bd_addr);
 		c->ready_ = 1;
 		pal_[c->localPalID_]->MAC_Initiate_Handshake(c);

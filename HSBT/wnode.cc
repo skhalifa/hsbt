@@ -90,6 +90,7 @@ wifi_(0)
     X_ = Random::uniform() * (x2_range - x1_range) + x1_range;
     Y_ = Random::uniform() * (y2_range - y1_range) + y1_range;
     Z_ = 0;
+    printf("\n\n X_=%f , Y_=%f , Z_ = %f",X_,Y_,Z_);
     // speed_ = 0;
     dX_ = 0;			// speed = 0
     dY_ = 0;
