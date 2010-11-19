@@ -1,17 +1,10 @@
-Most files in this directory, except distfer.h, were written by
-===============================================================
-	Qihe Wang <qwang@ececs.uc.edu>
+-> Most files in this directory, except distfer.h, were written by Qihe Wang <qwang@ececs.uc.edu>
 
-distfer.h is taken from IBM BlueHoc Project.
-===========================================
+-> distfer.h is taken from IBM BlueHoc Project.
 
-UWB Model (mac-ifcontrol.*,intererence-phy.*,propagation-tarokh.*,modulation-codeppm.*) 
+
+-> UWB Model (mac-ifcontrol.*,intererence-phy.*,propagation-tarokh.*,modulation-codeppm.*) 
 and NOAH were written by
-=====================================================
-Joerg Widmer, EPFL
-Ruben Merz, EPFL
-http://uwb.epfl.ch/ns-2/index.html
+Joerg Widmer, Ruben Merz (http://uwb.epfl.ch/ns-2/index.html)
 
-AMP files (amp-PAL* and amp-a2mp.*) and the integration between the UCBT and EPFL UWB were written by
-==================================================== 
-Shady Khalifa <sh.khalifa@fci-cu.edu.eg>
+-> AMP files (amp-PAL* and amp-a2mp.*) and the integration between the UCBT and EPFL UWB were written by Shady Khalifa <sh.khalifa@fci-cu.edu.eg>
