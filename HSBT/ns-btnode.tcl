@@ -182,9 +182,21 @@ Node/BTNode instproc init args {
 #set val(chan)   Channel/WirelessChannel    ;# channel type
 #set val(prop)   Propagation/TwoRayGround   ;# radio-propagation model
 #set val(palType) PAL/802_11 or PAL/UWB
+#set val(version) "802.11b" or "802.11g"
+#set val(txPower_)	108 ;# Active alternative MAC/PHY TX Energy consumption per second
+#set val(rxPower_)	98  ;# Active alternative MAC/PHY RX Energy consumption per second
+#set val(idlePower_)	80;# Active alternative MAC/PHY Idle Energy consumption per second
+#set val(sleepPower_)	10
+#set val(transitionPower_)	10 
+#set val(transitionTime_)	0.005 
 #set topo       [new Topography]
 #set chan [new $val(chan)];#Create wireless channel
-#$node add-PAL $val(palType) $topo $chan $val(prop)
+#set modulationInstance_ [new Modulation/CodedPPM]
+
+#$node_($i) add-PAL $val(palType) $val(version) $topo $chan $val(prop) \
+		$val(txPower_) $val(rxPower_) $val(idlePower_) \
+		$val(sleepPower_) $val(transitionPower_) $val(transitionTime_) \
+		$modulationInstance_
 		
 Node/BTNode instproc add-PAL {palType version topo channel pmodel \
 				txPower_ rxPower_ idlePower_ sleepPower_ \
