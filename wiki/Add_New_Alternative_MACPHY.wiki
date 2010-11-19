@@ -1,14 +1,15 @@
-#summary One-sentence summary of this page.
-
 = Add New Alternative MAC/PHY for Bluetooth =
 
 1) Goto: ns-allinone-2.29/ns-2.29/ucbt-0.9.9.2a
+
 2) Add your PAL class (which inherit from PAL) to *amp-PAL.h*
 {{{
 class PALXXX:public PAL {
 }
 }}}
+
 3) Create *amp-PALXXX.cc* to implement your PAL methods
+
 4) Open *ns-btnode.tcl* and add the protocol stack to the _add-PAL_ procedure
 {{{
 Node/BTNode instproc add-PAL {palType version topo channel pmodel \
@@ -26,9 +27,10 @@ Node/BTNode instproc add-PAL {palType version topo channel pmodel \
 
 }}}
 
-5)Add your alternative MAC and PHY files (cc and h) to the ns-allinone-2.29/ns-2.29/ucbt-0.9.9.2a/ns-2.29 folder
+5)Add your alternative MAC and PHY files (cc and h) to the ns-allinone-2.29/ns-2.29/ucbt-0.9.9.2a/ns-2.29
 
-6) Edit ns-allinone-2.29/ns-2.29/ucbt-0.9.9.2a/ns-2.29/link-ns.sh 
+6) Edit ns-allinone-2.29/ns-2.29/ucbt-0.9.9.2a/ns-2.29/link-ns.sh
+ 
 at the end of the file add 
 {{{
      setlink $dir/mobile ppm.cc ../$DST
@@ -74,8 +76,11 @@ OBJ_CC = \
 }}}
 
 8) In  ns-allinone-2.29/ns-2.29/ucbt-0.9.9.2a/ns-2.29/ 
+
 Run link-ns.sh
 
 9) In  ns-allinone-2.29/ns-2.29/ucbt-0.9.9.2a
+
 Run ./configure
-the run make
+
+then run make
