@@ -62,9 +62,9 @@ create-god $val(numberOfMACs)
 # configure nodes
 
 	$ns_ node-config -macType $val(mac) \
-                         -agentTrace OFF \
-                         -routerTrace OFF \
-                         -macTrace OFF \
+                         -agentTrace ON \
+                         -routerTrace ON \
+                         -macTrace ON \
                          -movementTrace OFF \
 			 -energyModel $val(energy) \
 			 -initialEnergy $val(initialenergy)
