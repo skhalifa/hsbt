@@ -38,6 +38,6 @@
    then you can use the modified setdest program.
 
 9. to recompile if you make some changes to the source code:
-	make # in bluetooth/
+	run make in bluetooth/
 
-   If you did a lot of changes, see file UPGRADDE
+   If you did a lot of changes, see file UPGRADE
