@@ -1,0 +1,86 @@
+# Add New Alternative MAC/PHY for Bluetooth #
+
+1) Goto: ns-allinone-2.29/ns-2.29/ucbt-0.9.9.2a
+
+2) Add your PAL class (which inherit from PAL) to **amp-PAL.h**
+```
+class PALXXX:public PAL {
+}
+```
+
+3) Create **amp-PALXXX.cc** to implement your PAL methods
+
+4) Open **ns-btnode.tcl** and add the protocol stack to the _add-PAL_ procedure
+```
+Node/BTNode instproc add-PAL {palType version topo channel pmodel \
+				txPower_ rxPower_ idlePower_ sleepPower_ \
+				transitionPower_ transitionTime_ modulationInstance_ } {
+	if {$palType == "PAL/802_11"} {
+		if { $version != "802.11b" && $version != "802.11g"} {
+			error "Currently only these 802.11 versions are supported : 802.11b and 802.11g"
+		}
+        } elseif {$palType == "PAL/UWB"} {
+        } elseif {$palType == "PAL/XXX"} {
+        } else	{
+		error "Currently only these PAL values are supported (add-PAL): PAL/802_11 , PAL/UWB" and "PAL/XXX"
+	}
+
+```
+
+5)Add your alternative MAC and PHY files (cc and h) to the ns-allinone-2.29/ns-2.29/ucbt-0.9.9.2a/ns-2.29
+
+6) Edit ns-allinone-2.29/ns-2.29/ucbt-0.9.9.2a/ns-2.29/link-ns.sh
+
+at the end of the file add
+```
+     setlink $dir/mobile ppm.cc ../$DST
+```
+where $dir/mobile is the place you want your file to go to and ppm.cc is the name of the your file
+
+7) Edit ns-allinone-2.29/ns-2.29/ucbt-0.9.9.2a/ns-2.29/Makefile.in
+```
+OBJ_CC = \
+	tools/random.o tools/rng.o tools/ranvar.o common/misc.o common/timer-handler.o \
+	common/scheduler.o common/object.o common/packet.o \
+	common/ip.o routing/route.o common/connector.o common/ttl.o \
+	....
+        ....
+	bluetooth/baseband.o bluetooth/bt-node.o \
+	bluetooth/l2cap.o bluetooth/lmp.o \
+	bluetooth/lmp-link.o bluetooth/lmp-piconet.o \
+   
+        bluetooth/amp-PALXXX.o \
+
+	bluetooth/amp-PALUWB.o bluetooth/amp-PAL802_11.o bluetooth/amp-a2mp.o  \
+	bluetooth/bnep.o bluetooth/sdp.o \
+	bluetooth/rendpoint.o \
+	bluetooth/bt-lossmod.o \
+	bluetooth/bt-linksched.o \
+	bluetooth/sco-agent.o \
+	bluetooth/aodv-bt.o bluetooth/dsdv-bt.o \
+	bluetooth/tora-bt.o bluetooth/dsr-bt.o \
+	bluetooth/manual-bt.o \
+	bluetooth/wnode.o \
+	bluetooth/statis.o \
+	bluetooth/bt-stat.o \
+	bluetooth/scat-form.o \
+	bluetooth/scat-form-law.o \
+	bluetooth/scat-form-pl.o \
+	bluetooth/trace-bt.o \
+	bluetooth/bt-channel.o bluetooth/classifier-compound.o \
+
+        Add any other classes you want ot compile
+
+	@V_STLOBJ@
+
+```
+
+8) In  ns-allinone-2.29/ns-2.29/ucbt-0.9.9.2a/ns-2.29/
+
+Run link-ns.sh
+
+9) In  ns-allinone-2.29/ns-2.29/ucbt-0.9.9.2a
+
+Run ./configure
+
+then run make
